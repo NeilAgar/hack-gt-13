@@ -43,3 +43,38 @@ status and the exact morning commands.
 | 36 | Web: `BedsidePanel` is a client component that reuses the app's existing CSS classes (the app has no Tailwind). It asks for `include_synthetic=true` and shows a "Synthetic demo data (x% of calls)" chip whenever `synthetic_share > 0`; shares are never rounded to 100 %/0 %. Types and helpers are exported from `BedsidePanel.tsx` so the spec's two files are the only new web files. | |
 | 37 | `/live` timer anchor: the server's receive time of `call_on` (ms precision) for live events; the device `ts` when the event reached the server > 5 s late (backlog, backfill). Client clock is corrected with `server_now_ms` on every message and ping, and ticks every 100 ms. | Spec: "server event timestamp plus a client clock". Device `ts` has 1 s resolution, receive time is sharper for live events. |
 | 38 | `/live` is a fixed full-screen overlay (the root layout's header/footer stay underneath) so no shared layout file changes; stacks to one column under 720 px. | New files only. |
+
+## Summary (end of the overnight build)
+
+**Done and tested here (no hardware):**
+- Firmware: pure state machine, light classifier (EMA, adaptive baseline, hysteresis, FLASH, 300 ms / 2 s debounce),
+  hash chain + HMAC. `pio test -e native`: **12/12 pass**, including the cross-language vector.
+- Firmware **compiles** for `esp32dev` and `esp32-s3-devkitc-1`, plus 5 option variants (LD2410 UART / OUT, reed,
+  no sensor, NeoPixel, buzzer, Wi-Fi, common-anode, no OLED, non-demo thresholds). esp32dev: RAM 7.9 %, flash 31 %.
+- Python: `hardware/tests` **12/12 pass** (same vector, tamper cases, tamper_demo.sh end to end).
+- API: `api/tests/test_bedside.py` **11/11 pass**; the existing API suite still passes (50 total).
+  uvicorn + `simulate_device.py --script demo` gives the right stats (median 33.0 s from 21 s + 45 s, 1 no-entry),
+  SSE pushes each event, `verify_log.py --api` ✅.
+- Bridge tested against a fake device on a pseudo-terminal: time sync, `dump` backfill, EVT forwarding,
+  local log, server chain ✅.
+- Web: `npx tsc --noEmit` and `npm test` pass. `/live` rendered in headless Chromium against the simulator:
+  green → amber → "Someone arrived after 0:21" → "0:45" → red "Cancelled — no one entered"; state survives a reload;
+  no horizontal scroll at 390 px. `BedsidePanel` rendered against 30 days of seeded synthetic history.
+
+**Not tested on real hardware (check in the morning):**
+- ADC readings / thresholds of the actual LDR + LED pair (calibrate, README §3).
+- HC-SR501 behaviour (warm-up, retrigger jumper, false triggers from the mock LED's light? keep the PIR aimed at the door).
+- OLED at 0x3C, RGB polarity, LittleFS on first boot (formats automatically), `dump` over a real USB-UART.
+- The CP210x/CH340 auto-detect on your laptop; the S3 pin block; LD2410 frames; Wi-Fi/NTP path (off by default).
+- `docs/`, `web/` mounting and the Makefile target are requests to the owners (see `docs/REQUESTS.md`), not done.
+
+**Morning commands (repo root):**
+```bash
+git checkout h/call-clock
+pip install platformio -r hardware/bridge/requirements.txt -r api/requirements.txt && (cd web && npm ci)
+cd hardware/firmware && pio test -e native && pio run -t upload && pio device monitor   # `cal on`, calibrate, Ctrl-C
+cd ../.. && make api                                   # terminal 1
+python hardware/bridge/serial_bridge.py --port auto    # terminal 2
+make web                                               # terminal 3 → http://localhost:3000/live
+bash hardware/tools/tamper_demo.sh hardware/logs/cc-01.jsonl
+```
