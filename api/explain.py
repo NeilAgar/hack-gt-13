@@ -1,5 +1,6 @@
 """Grok explanation. Grok only rephrases the facts it is given (AGENTS.md rule 7);
 any reply with a number not in the facts, or the word "gaming", is replaced by a template."""
+import json
 import os
 import re
 
@@ -59,21 +60,47 @@ def passes_guardrails(text, facts):
     return all(m.lstrip("-") in allowed or m in allowed for m in _NUM.findall(text))
 
 
-def explain(fac, client=None):
-    facts = facts_for(fac)
-    key = os.environ.get("XAI_API_KEY")
-    if not key:
-        return template(facts)
+# Web gives up on the API after 4 s (API_TIMEOUT_MS), so Grok must answer well inside that.
+GROK_TIMEOUT_S = float(os.environ.get("XAI_TIMEOUT_S", "3"))
+
+# Grok replies that passed the guardrails, keyed by the exact facts sent. Timeouts and
+# rejected replies aren't cached, so the next view tries Grok again.
+_cache = {}
+
+
+def _cache_key(facts):
+    return json.dumps(facts, sort_keys=True)
+
+
+def cached(fac):
+    """The stored Grok explanation for this facility, or None."""
+    return _cache.get(_cache_key(facts_for(fac)))
+
+
+def _ask_grok(facts, key, client):
     try:
-        client = client or httpx.Client(timeout=20)
+        client = client or httpx.Client(timeout=GROK_TIMEOUT_S)
         r = client.post(XAI_URL, headers={"Authorization": f"Bearer {key}"}, json={
             "model": os.environ.get("XAI_MODEL", "grok-4"),
             "temperature": 0.2,
             "messages": [{"role": "system", "content": SYSTEM_PROMPT},
-                         {"role": "user", "content": str(facts)}],
+                         {"role": "user", "content": json.dumps(facts)}],
         })
         r.raise_for_status()
         text = r.json()["choices"][0]["message"]["content"].strip()
     except (httpx.HTTPError, KeyError, IndexError, ValueError):
+        return None
+    return text if passes_guardrails(text, facts) else None
+
+
+def explain(fac, client=None):
+    facts = facts_for(fac)
+    k = _cache_key(facts)
+    if k in _cache:
+        return _cache[k]
+    key = os.environ.get("XAI_API_KEY")
+    text = _ask_grok(facts, key, client) if key else None
+    if text is None:
         return template(facts)
-    return text if passes_guardrails(text, facts) else template(facts)
+    _cache[k] = text
+    return text
