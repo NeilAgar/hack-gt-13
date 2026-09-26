@@ -18,3 +18,14 @@ export function topPredictability(rows: PredictabilityRow[], limit = 20): Predic
  * about 28: 356 homes / 12.9 months.)
  */
 export const DEFAULT_CAPACITY = 22;
+
+/** Homes the schedule must include by law (more than 15.9 months since their last standard inspection). */
+export function overdueCount(schedule: { probs: { forced: boolean }[] } | null | undefined): number {
+  return schedule ? schedule.probs.filter((row) => row.forced).length : 0;
+}
+
+/** Keep a typed capacity whole and at or above the minimum. */
+export function clampCapacity(value: number, min: number, max = Number.POSITIVE_INFINITY): number {
+  const n = Number.isFinite(value) ? Math.round(value) : min;
+  return Math.min(max, Math.max(min, n));
+}

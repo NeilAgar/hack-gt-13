@@ -27,7 +27,7 @@ import {
   scoreSummary,
   UNSCORED_COPY,
 } from "../lib/format.ts";
-import { topPredictability, visibleProbabilities } from "../lib/regulator.ts";
+import { clampCapacity, overdueCount, topPredictability, visibleProbabilities } from "../lib/regulator.ts";
 
 const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -219,6 +219,18 @@ describe("regulator header", () => {
       capacity: 3,
       seed: 1,
     });
+  });
+});
+
+describe("regulator capacity", () => {
+  test("the minimum is the number of legally overdue homes", () => {
+    const schedule = { probs: [{ forced: true }, { forced: true }, { forced: false }] };
+    assert.equal(overdueCount(schedule), 2);
+    assert.equal(overdueCount(null), 0);
+    assert.equal(clampCapacity(1, 14), 14);
+    assert.equal(clampCapacity(22, 14, 40), 22);
+    assert.equal(clampCapacity(99, 14, 40), 40);
+    assert.equal(clampCapacity(Number.NaN, 14), 14);
   });
 });
 

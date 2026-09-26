@@ -3,18 +3,25 @@
 import { useState, type FormEvent } from "react";
 
 import { currentMonth, formatProbability } from "@/lib/format";
-import { DEFAULT_CAPACITY, visibleProbabilities } from "@/lib/regulator";
+import { clampCapacity, DEFAULT_CAPACITY, visibleProbabilities } from "@/lib/regulator";
 import type { ScheduleRequest, ScheduleResponse } from "@/lib/types";
 
 const CAPACITY_MAX = 40;
 
 export function SchedulePanel({
   generateSchedule,
+  minCapacity = 1,
+  overdue = 0,
 }: {
   generateSchedule: (body: ScheduleRequest) => Promise<ScheduleResponse>;
+  /** Smallest capacity allowed: the number of legally overdue homes. */
+  minCapacity?: number;
+  overdue?: number;
 }) {
+  const min = Math.min(Math.max(1, minCapacity), CAPACITY_MAX);
   const [month, setMonth] = useState(currentMonth);
-  const [capacity, setCapacity] = useState(DEFAULT_CAPACITY);
+  const [capacity, setCapacity] = useState(() => clampCapacity(DEFAULT_CAPACITY, min, CAPACITY_MAX));
+  const set = (value: number) => setCapacity(clampCapacity(value, min, CAPACITY_MAX));
   const [result, setResult] = useState<ScheduleResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -25,7 +32,9 @@ export function SchedulePanel({
     setPending(true);
     setError(null);
     try {
-      const schedule = await generateSchedule({ month, capacity });
+      const chosen = clampCapacity(capacity, min, CAPACITY_MAX);
+      setCapacity(chosen);
+      const schedule = await generateSchedule({ month, capacity: chosen });
       setResult(schedule);
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Could not generate a schedule.";
@@ -59,25 +68,32 @@ export function SchedulePanel({
           <span className="capacity-control">
             <input
               type="range"
-              min={1}
+              min={min}
               max={CAPACITY_MAX}
               step={1}
-              value={Number.isInteger(capacity) ? capacity : 1}
-              aria-valuemin={1}
+              value={capacity}
+              aria-valuemin={min}
               aria-valuemax={CAPACITY_MAX}
-              aria-valuenow={Number.isInteger(capacity) ? capacity : 1}
-              onChange={(event) => setCapacity(Number(event.target.value))}
+              aria-valuenow={capacity}
+              onChange={(event) => set(Number(event.target.value))}
             />
             <input
               type="number"
-              min={1}
+              min={min}
               max={CAPACITY_MAX}
               step={1}
               value={capacity}
               onChange={(event) => setCapacity(Number(event.target.value))}
+              onBlur={() => set(capacity)}
               required
             />
           </span>
+          {overdue > 0 ? (
+            <span className="meta">
+              Minimum {min}: {overdue} homes are legally overdue (more than 15.9 months since their last
+              inspection) and must be inspected. Slots above {min} are the randomized picks.
+            </span>
+          ) : null}
         </label>
         <button type="submit" disabled={pending}>
           {pending ? "Generating…" : "Generate"}
