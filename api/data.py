@@ -7,11 +7,13 @@ import math
 from functools import lru_cache
 from pathlib import Path
 
+from api import adjusted
+
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURES = ROOT / "fixtures"
 PROCESSED = ROOT / "data" / "processed"
 
-LIST_FIELDS = ["ccn", "name", "city", "lat", "lon", "overall_star", "staffing_star",
+LIST_FIELDS = ["ccn", "name", "city", "lat", "lon", "overall_star", "adjusted_star", "staffing_star",
                "score_pct", "ci_low", "ci_high", "label", "trophy_flag"]
 SCORE_FIELDS = ["n_surveys", "raw_pct", "score_pct", "ci_low", "ci_high", "surge_pct",
                 "weekend_dip_pct", "label", "trophy_flag"]
@@ -70,6 +72,9 @@ def _processed():
         if row.get("n_surveys") is not None:
             row["n_surveys"] = int(row["n_surveys"])
         details[row["ccn"]] = row
+    state_avg = adjusted.state_average(d.get("raw_pct") for d in details.values())
+    for row in details.values():
+        row["adjusted_star"], row["adjust_reason"] = adjusted.adjust(row, state_avg)
     by_ccn, state_curve = {}, []
     if curves is not None:
         curves["ccn"] = curves["ccn"].astype(str)
@@ -94,10 +99,14 @@ def _facility_sample():
     return sample
 
 
+def _unadjusted(row):
+    return {**row, "adjusted_star": row.get("overall_star"), "adjust_reason": None}
+
+
 def facilities():
     p = _processed()
     if p is None:
-        return _fixture_facilities()
+        return [{k: _unadjusted(f).get(k) for k in LIST_FIELDS} for f in _fixture_facilities()]
     return [{k: d.get(k) for k in LIST_FIELDS} for d in p["details"].values()]
 
 
@@ -118,11 +127,11 @@ def facility(ccn):
         return {**row, "curve": p["curves"].get(ccn, []), "state_curve": p["state_curve"], "explanation": None}
     sample = _facility_sample()
     if ccn == sample["ccn"]:
-        return dict(sample)
+        return _unadjusted(sample)
     row = next((f for f in _fixture_facilities() if f["ccn"] == ccn), None)
     if row is None:
         return None
-    return {**row, "curve": [], "state_curve": sample["state_curve"], "explanation": None}
+    return {**_unadjusted(row), "curve": [], "state_curve": sample["state_curve"], "explanation": None}
 
 
 @lru_cache

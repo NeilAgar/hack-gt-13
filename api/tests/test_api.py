@@ -38,7 +38,7 @@ def keys(obj):
 def test_facilities_contract_fields():
     rows = client.get("/api/facilities").json()
     assert rows
-    expected = {"ccn", "name", "city", "lat", "lon", "overall_star", "staffing_star",
+    expected = {"ccn", "name", "city", "lat", "lon", "overall_star", "adjusted_star", "staffing_star",
                 "score_pct", "ci_low", "ci_high", "label", "trophy_flag"}
     assert all(set(r) == expected for r in rows)
 
@@ -264,8 +264,8 @@ def test_family_serves_processed_tables(processed):
     assert r.headers["X-Data-Source"] == "processed"
     rows = {f["ccn"]: f for f in r.json()}
     assert set(rows) == {"115001", "115002"}
-    assert all(set(f) == {"ccn", "name", "city", "lat", "lon", "overall_star", "staffing_star", "score_pct",
-                          "ci_low", "ci_high", "label", "trophy_flag"} for f in rows.values())
+    assert all(set(f) == {"ccn", "name", "city", "lat", "lon", "overall_star", "adjusted_star", "staffing_star",
+                          "score_pct", "ci_low", "ci_high", "label", "trophy_flag"} for f in rows.values())
     assert rows["115001"]["score_pct"] == 7.5 and rows["115001"]["trophy_flag"] is True
     assert client.get("/api/facilities", params={"q": "savannah"}).json()[0]["ccn"] == "115002"
 
