@@ -27,6 +27,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <nav className="nav" aria-label="Primary">
               <a href="/">Families</a>
               <a href="/regulator">Regulator demo</a>
+              <a href="http://localhost:8000/voice">Talk to Grok</a>
             </nav>
           </div>
         </header>

@@ -14,6 +14,14 @@ import {
   getTrophy,
   postSchedule,
 } from "../lib/api.ts";
+import {
+  isScored,
+  pinColor,
+  reductionCaption,
+  scoreHeadline,
+  scoreSummary,
+  UNSCORED_COPY,
+} from "../lib/format.ts";
 import { topPredictability, visibleProbabilities } from "../lib/regulator.ts";
 
 const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -65,8 +73,8 @@ describe("fixture fallback", () => {
       assert.equal(row.ccn.length, 6);
       assert.equal(typeof row.ci_low, "number");
       assert.equal(typeof row.ci_high, "number");
-      assert.ok(row.ci_low <= row.ci_high);
-      assert.ok(["High", "Watch", "Low"].includes(row.label));
+      assert.ok(row.ci_low !== null && row.ci_high !== null && row.ci_low <= row.ci_high);
+      assert.ok(row.label !== null && ["High", "Watch", "Low"].includes(row.label));
     }
 
     const facility = await getFacility("115999");
@@ -233,6 +241,38 @@ describe("regulator lists", () => {
     assert.ok(top[0].p_next_60d > top[19].p_next_60d);
   });
 });
+describe("scores and simulation copy", () => {
+  test("null scores and labels are not filled in", () => {
+    assert.equal(isScored(null, null, null), false);
+    assert.equal(scoreHeadline(null, 0, 0, null), null);
+    assert.equal(scoreSummary(null, null, null), UNSCORED_COPY);
+    assert.equal(pinColor(null, 4.2), "#8a8478");
+    assert.equal(pinColor("Watch", null), "#8a8478");
+    assert.equal(pinColor("Low", 4.2), "#a33b32");
+  });
+
+  test("the headline names the window through the day before the inspection ended", () => {
+    const headline = scoreHeadline(11, 6, 16, 7);
+    assert.ok(headline);
+    assert.match(headline, /14 days through the day before past inspections ended/);
+    assert.match(headline, /11%/);
+    assert.match(headline, /range 6–16%/);
+    assert.match(headline, /7 inspections/);
+    assert.doesNotMatch(headline, /before past inspections,/);
+    assert.doesNotMatch(headline, /2 weeks before/);
+  });
+
+  test("a small simulation reduction stays a short-run gap", () => {
+    const caption = reductionCaption(3.5);
+    assert.ok(caption);
+    assert.match(caption, /3\.5%/);
+    assert.match(caption, /small short-run gap/);
+    assert.match(caption, /40–60 week window/);
+    assert.match(reductionCaption(-16) ?? "", /more undetected shirk/);
+    assert.doesNotMatch(reductionCaption(43.9) ?? "", /small short-run gap/);
+  });
+});
+
 describe("family copy", () => {
   test("user-facing files follow the language rules", () => {
     const files = [...walk(path.join(webRoot, "app")), ...walk(path.join(webRoot, "components"))];

@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
-import { formatCount, formatPct } from "@/lib/format";
+import { formatCount, formatPct, reductionCaption } from "@/lib/format";
 import type { SimulateResponse } from "@/lib/types";
 
 const BAR_COLORS = ["#8d7b66", "#123f4c"];
@@ -44,6 +44,7 @@ export function SimulationChart({
   const statusQuo = simulation.status_quo?.undetected_shirk_resident_months;
   const popQuiz = simulation.popquiz?.undetected_shirk_resident_months;
   const ready = Number.isFinite(statusQuo) && Number.isFinite(popQuiz);
+  const caption = reductionCaption(simulation.reduction_pct);
   const data = ready
     ? [
         { schedule: "Status quo", value: statusQuo },
@@ -92,9 +93,10 @@ export function SimulationChart({
             </div>
             <div className="stat">
               <b>{Number.isFinite(simulation.reduction_pct) ? `${formatPct(simulation.reduction_pct)}%` : "—"}</b>
-              <span>reduction_pct</span>
+              <span>Reduction</span>
             </div>
           </div>
+          {caption ? <p className="note">{caption}</p> : null}
           <div className="chart-wrap chart-short">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
