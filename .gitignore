@@ -16,8 +16,15 @@ venv/
 node_modules/
 .next/
 out/
+*.tsbuildinfo
 
 # Editors and OS
 .DS_Store
 .idea/
 .vscode/
+
+# Call Clock (hardware/): device keys, bedside DB, local event logs, PlatformIO build dir
+hardware/keys/devices.json
+hardware/logs/
+data/bedside.sqlite*
+.pio/

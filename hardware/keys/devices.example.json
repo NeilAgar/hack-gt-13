@@ -1,0 +1,8 @@
+{
+  "_note": "PUBLIC demo keys (committed on purpose). Copy to devices.json (gitignored) and replace with secrets.token_hex(32) for anything real. cc-01 must equal HMAC_KEY_HEX in firmware/include/config.h.",
+  "cc-01": "3c1f0e7a9b2d4c6e8f0a1b3c5d7e9f1a2b4c6d8e0f1a3b5c7d9e1f2a4b6c8d0e",
+  "sim-dev": "e98aefa0d44747bd9ecc80af4a5c3583a690111da74b52ff66b1ee96176f3cb7",
+  "sim-01": "1447cc4f3978755d1cf3687dd777007158352c900eccab500e9817a97328b92a",
+  "sim-02": "3febe378e0c26e67b372fe7304d5c96810980d3e8310706d95b2d566ea13a282",
+  "sim-03": "23defb6db5a7f7555ceb11c1e425dc024b14ed254613249ca47dc7fcb86471a0"
+}
