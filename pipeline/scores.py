@@ -4,9 +4,8 @@ Day 0 is the inspection END date (CMS Survey Date). Paper §3.1 / eq. (1):
 inspectors must report end dates; start dates are unreliable, so they do not
 shift the event study to start. Peak staffing is on day −1; hours collapse on +1.
 
-Windows (ARCHITECTURE §2, applied on that exit-day calendar):
-  pre-ramp −14..−1, surge 0..+3 (reported, not scored), baseline +28..+56.
-Raw score = mean over inspections of (pre − base) / base × 100.
+Scored window −14..−1 is the 14 days through the last inspection day (it
+includes the inspection). Do not describe it as "before inspections".
 """
 
 from __future__ import annotations
@@ -18,14 +17,35 @@ from pipeline.cms import (
     BASELINE,
     BOOTSTRAP_REPS,
     BOOTSTRAP_SEED,
-    LABEL_PLACEHOLDER,
+    HEADLINE_TEMPLATE,
     OVERLAP_DAYS,
     PRE_RAMP,
     PROCESSED,
     SCORES_COLS,
     SURGE,
+    WATCH_CI_HIGH_MIN,
 )
 from pipeline.tables import drop_overlapping_surveys, event_panel
+
+
+def format_headline(score_pct: float, ci_low: float, ci_high: float, n_surveys: int) -> str:
+    direction = "higher" if score_pct >= 0 else "lower"
+    return HEADLINE_TEMPLATE.format(
+        abs_pct=abs(float(score_pct)),
+        direction=direction,
+        ci_low=float(ci_low),
+        ci_high=float(ci_high),
+        n=int(n_surveys),
+    )
+
+
+def assign_label(score_pct: float, ci_low: float, ci_high: float) -> str:
+    """Staffing Consistency. Low = CI entirely above 0 (survey-responsive staffing)."""
+    if ci_low > 0:
+        return "Low"
+    if ci_high > WATCH_CI_HIGH_MIN:
+        return "Watch"
+    return "High"
 
 
 def _window_mean(panel: pd.DataFrame, lo: int, hi: int, value_col: str) -> pd.Series:
@@ -33,7 +53,7 @@ def _window_mean(panel: pd.DataFrame, lo: int, hi: int, value_col: str) -> pd.Se
     return sub.groupby(["ccn", "survey_date"])[value_col].mean()
 
 
-def inspection_contrasts(daily: pd.DataFrame, surveys: pd.DataFrame) -> pd.DataFrame:
+def inspection_contrasts(daily: pd.DataFrame, surveys: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     svy = drop_overlapping_surveys(surveys, OVERLAP_DAYS)
     panel = event_panel(daily, svy)
     pre_h = _window_mean(panel, *PRE_RAMP, "hprd")
@@ -59,13 +79,15 @@ def inspection_contrasts(daily: pd.DataFrame, surveys: pd.DataFrame) -> pd.DataF
         },
         axis=1,
     ).reset_index()
-    # Need enough days in both scored windows (pre 14 days, baseline 29 days).
     usable = out["pre_n"].fillna(0).ge(7) & out["base_n"].fillna(0).ge(14) & out["base_hprd"].gt(0)
     out = out.loc[usable].copy()
     out["raw_pct"] = (out["pre_hprd"] - out["base_hprd"]) / out["base_hprd"] * 100.0
     out["surge_pct"] = (out["surge_hprd"] - out["base_hprd"]) / out["base_hprd"] * 100.0
-    print(f"usable inspections for scores: {len(out)}")
-    return out
+    # One bad census day can produce 400% contrasts; cap before means/CIs/EB.
+    lo, hi = out["raw_pct"].quantile(0.025), out["raw_pct"].quantile(0.975)
+    out["raw_pct"] = out["raw_pct"].clip(lo, hi)
+    print(f"usable inspections for scores: {len(out)} (winsorize raw_pct to [{lo:.1f}, {hi:.1f}])")
+    return out, panel
 
 
 def weekend_dip(daily: pd.DataFrame) -> pd.Series:
@@ -80,17 +102,46 @@ def weekend_dip(daily: pd.DataFrame) -> pd.Series:
     return ((weekday - weekend) / weekday.replace(0, np.nan) * 100.0).rename("weekend_dip_pct")
 
 
-def _bootstrap_ci(
-    values: np.ndarray, rng: np.random.Generator, reps: int, pooled_sd: float
+def _day_bootstrap_pct(pre: np.ndarray, base: np.ndarray, rng: np.random.Generator, reps: int) -> np.ndarray:
+    pre = np.asarray(pre, dtype=float)
+    base = np.asarray(base, dtype=float)
+    pre = pre[np.isfinite(pre)]
+    base = base[np.isfinite(base)]
+    if len(pre) < 3 or len(base) < 3:
+        return np.array([])
+    p = rng.choice(pre, size=(reps, len(pre)), replace=True).mean(axis=1)
+    b = rng.choice(base, size=(reps, len(base)), replace=True).mean(axis=1)
+    ok = b > 0.05
+    pct = np.full(reps, np.nan)
+    pct[ok] = (p[ok] - b[ok]) / b[ok] * 100.0
+    return pct[np.isfinite(pct)]
+
+
+def _facility_ci(
+    ccn: str,
+    part: pd.DataFrame,
+    panel: pd.DataFrame,
+    rng: np.random.Generator,
+    clip: tuple[float, float],
 ) -> tuple[float, float]:
-    if len(values) == 0:
-        return (np.nan, np.nan)
-    if len(values) == 1:
-        se = pooled_sd
+    values = part["raw_pct"].to_numpy()
+    if len(values) >= 2:
+        draws = rng.choice(values, size=(BOOTSTRAP_REPS, len(values)), replace=True).mean(axis=1)
+        return float(np.percentile(draws, 2.5)), float(np.percentile(draws, 97.5))
+    # One inspection: bootstrap days in the scored windows, not the cross-home SD.
+    one = part.iloc[0]
+    days = panel.loc[
+        (panel["ccn"] == ccn)
+        & (pd.to_datetime(panel["survey_date"]) == pd.to_datetime(one["survey_date"]))
+    ]
+    pre = days.loc[days["rel_day"].between(*PRE_RAMP), "hprd"].to_numpy()
+    base = days.loc[days["rel_day"].between(*BASELINE), "hprd"].to_numpy()
+    draws = _day_bootstrap_pct(pre, base, rng, BOOTSTRAP_REPS)
+    if len(draws) < 20:
         v = float(values[0])
-        return (v - 1.96 * se, v + 1.96 * se)
-    draws = rng.choice(values, size=(reps, len(values)), replace=True).mean(axis=1)
-    return (float(np.percentile(draws, 2.5)), float(np.percentile(draws, 97.5)))
+        return (v, v)
+    draws = np.clip(draws, clip[0], clip[1])
+    return float(np.percentile(draws, 2.5)), float(np.percentile(draws, 97.5))
 
 
 def empirical_bayes(raw: pd.Series, sigma2: pd.Series) -> pd.Series:
@@ -103,56 +154,73 @@ def empirical_bayes(raw: pd.Series, sigma2: pd.Series) -> pd.Series:
 
 
 def build_scores(daily: pd.DataFrame, surveys: pd.DataFrame, facilities: pd.DataFrame) -> pd.DataFrame:
-    insp = inspection_contrasts(daily, surveys)
+    insp, panel = inspection_contrasts(daily, surveys)
+    clip = (float(insp["raw_pct"].min()), float(insp["raw_pct"].max()))
     counts = insp.groupby("ccn").size()
-    n1 = int((counts == 1).sum())
-    n2 = int((counts == 2).sum())
-    n3 = int((counts >= 3).sum())
-    print(f"homes with usable inspections: 1={n1}  2={n2}  3+={n3}")
+    print(
+        f"homes with usable inspections: 1={int((counts == 1).sum())}  "
+        f"2={int((counts == 2).sum())}  3+={int((counts >= 3).sum())}"
+    )
 
     grouped = insp.groupby("ccn")
     raw = grouped["raw_pct"].mean()
     surge = grouped["surge_pct"].mean()
     n_surveys = grouped.size().astype("int64")
-    # Sampling variance of the facility mean; n=1 uses pooled within-facility variance.
     within = grouped["raw_pct"].var(ddof=1)
     pooled = float(within.dropna().mean()) if within.notna().any() else float(insp["raw_pct"].var(ddof=1))
     sigma2 = (within.fillna(pooled) / n_surveys).rename("sigma2")
 
     rng = np.random.default_rng(BOOTSTRAP_SEED)
-    pooled_sd = float(np.sqrt(pooled)) if pooled == pooled else 0.0
-    ci_low = []
-    ci_high = []
+    ci_low_s = {}
+    ci_high_s = {}
     for ccn, part in grouped:
-        lo, hi = _bootstrap_ci(part["raw_pct"].to_numpy(), rng, BOOTSTRAP_REPS, pooled_sd)
-        ci_low.append((ccn, lo))
-        ci_high.append((ccn, hi))
-    ci_low_s = pd.Series(dict(ci_low), dtype="float64")
-    ci_high_s = pd.Series(dict(ci_high), dtype="float64")
+        lo, hi = _facility_ci(ccn, part, panel, rng, clip)
+        ci_low_s[ccn] = lo
+        ci_high_s[ccn] = hi
     score = empirical_bayes(raw, sigma2)
     dip = weekend_dip(daily)
 
     rbs = facilities.set_index("ccn")["rbs_proxy_eligible"]
+    names = facilities.set_index("ccn")["name"]
     out = pd.DataFrame(
         {
             "ccn": raw.index.astype("string").str.zfill(6),
             "n_surveys": n_surveys.reindex(raw.index).astype("int64").to_numpy(),
             "raw_pct": raw.to_numpy(),
             "score_pct": score.reindex(raw.index).to_numpy(),
-            "ci_low": ci_low_s.reindex(raw.index).to_numpy(),
-            "ci_high": ci_high_s.reindex(raw.index).to_numpy(),
+            "ci_low": pd.Series(ci_low_s).reindex(raw.index).to_numpy(),
+            "ci_high": pd.Series(ci_high_s).reindex(raw.index).to_numpy(),
             "surge_pct": surge.reindex(raw.index).to_numpy(),
             "weekend_dip_pct": dip.reindex(raw.index).to_numpy(),
         }
     )
-    # Cutoffs due 13:00 Sat — do not invent High/Watch/Low.
-    out["label"] = LABEL_PLACEHOLDER
+    out["label"] = [
+        assign_label(s, lo, hi)
+        for s, lo, hi in zip(out["score_pct"], out["ci_low"], out["ci_high"])
+    ]
     out["trophy_flag"] = (
         rbs.reindex(out["ccn"]).fillna(False).to_numpy() & (out["ci_low"] > 0)
     )
     width = (out["ci_high"] - out["ci_low"]).median()
     print(f"median CI width: {width:.3f} percentage points")
-    print(f"trophy_flag true: {int(out['trophy_flag'].sum())}")
+    print(out["label"].value_counts().to_string())
+    trophies = out.loc[out["trophy_flag"]].copy()
+    trophies["name"] = trophies["ccn"].map(names)
+    print(f"trophy_flag true: {len(trophies)}")
+    if len(trophies):
+        print(
+            trophies.sort_values("score_pct", ascending=False)[
+                ["ccn", "name", "n_surveys", "score_pct", "ci_low", "ci_high", "label"]
+            ].to_string(index=False)
+        )
+    example = out.iloc[0]
+    print("headline example:")
+    print(
+        "  "
+        + format_headline(
+            example["score_pct"], example["ci_low"], example["ci_high"], int(example["n_surveys"])
+        )
+    )
     return out[SCORES_COLS]
 
 
@@ -199,8 +267,8 @@ def plot_curve(curve: pd.DataFrame, path, title: str, vline_label: str) -> None:
     fig, ax = plt.subplots(figsize=(9, 4.5))
     ax.plot(curve["rel_day"], curve["hprd_resid_mean"], color="#1f4e79", lw=2)
     ax.axvline(0, color="#b00020", ls="--", lw=1.2, label=vline_label)
-    ax.axvspan(*PRE_RAMP, color="#f4c430", alpha=0.25, label="pre-ramp −14..−1")
-    ax.axvspan(*SURGE, color="#87ceeb", alpha=0.3, label="surge 0..+3")
+    ax.axvspan(*PRE_RAMP, color="#f4c430", alpha=0.25, label="through last inspection day −14..−1")
+    ax.axvspan(*SURGE, color="#87ceeb", alpha=0.3, label="post-exit 0..+3")
     ax.set_xlabel("rel_day (days relative to inspection END / CMS Survey Date)")
     ax.set_ylabel("mean hprd_resid")
     ax.set_title(title)

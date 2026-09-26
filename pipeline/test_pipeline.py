@@ -5,11 +5,11 @@ import pandas as pd
 from pipeline.cms import (
     DAILY_STAFFING_COLS,
     FACILITIES_COLS,
-    LABEL_PLACEHOLDER,
     PROCESSED,
     SCORES_COLS,
     SURVEYS_COLS,
 )
+from pipeline.scores import format_headline
 from pipeline.main import main
 
 
@@ -23,6 +23,17 @@ def _ensure_processed() -> None:
     ]
     if not all(p.exists() for p in needed):
         main()
+        return
+    scores = pd.read_parquet(PROCESSED / "scores.parquet")
+    if not set(scores["label"].astype(str).unique()) <= {"High", "Watch", "Low"}:
+        from pipeline.scores import build_scores
+
+        facilities = pd.read_parquet(PROCESSED / "facilities.parquet")
+        daily = pd.read_parquet(PROCESSED / "daily_staffing.parquet")
+        surveys = pd.read_parquet(PROCESSED / "surveys.parquet")
+        build_scores(daily, surveys, facilities).to_parquet(
+            PROCESSED / "scores.parquet", index=False
+        )
 
 
 def test_contract_tables_and_counts() -> None:
@@ -43,7 +54,14 @@ def test_contract_tables_and_counts() -> None:
     assert surveys["ccn"].map(lambda x: isinstance(x, str) and len(x) == 6).all()
     assert (surveys["survey_type"] == "health_standard").all()
     assert (surveys["source"] == "current").all()
-    assert (scores["label"] == LABEL_PLACEHOLDER).all()
+    assert set(scores["label"].unique()) <= {"High", "Watch", "Low"}
+    assert (scores.loc[scores["trophy_flag"], "ci_low"] > 0).all()
+    sample = scores.iloc[0]
+    headline = format_headline(
+        sample["score_pct"], sample["ci_low"], sample["ci_high"], int(sample["n_surveys"])
+    )
+    assert "before" not in headline.lower()
+    assert "through the last day of past inspections" in headline
     assert set(curves["ccn"].astype(str)) >= {"GA"}
     assert curves.loc[curves["ccn"] == "GA", "rel_day"].min() <= -42
     assert curves.loc[curves["ccn"] == "GA", "rel_day"].max() >= 56
