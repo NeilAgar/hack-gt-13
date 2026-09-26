@@ -1,0 +1,58 @@
+"""Data access for the API. Serves fixtures/ until real tables land in data/processed/."""
+import json
+from functools import lru_cache
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+FIXTURES = ROOT / "fixtures"
+
+SOURCE = "fixtures"
+
+
+def _load(name):
+    return json.loads((FIXTURES / name).read_text())
+
+
+@lru_cache
+def facilities():
+    return _load("facilities.json")
+
+
+@lru_cache
+def _facility_sample():
+    sample = _load("facility_sample.json")
+    sample.pop("_note", None)
+    return sample
+
+
+def search_facilities(q, limit):
+    q = (q or "").strip().lower()
+    rows = [f for f in facilities() if not q or q in f["name"].lower() or q in f["city"].lower() or q == f["ccn"]]
+    return rows[:limit]
+
+
+def facility(ccn):
+    """Full facility record, or None. Fixtures only have a curve for the sample facility (115999)."""
+    sample = _facility_sample()
+    if ccn == sample["ccn"]:
+        return dict(sample)
+    row = next((f for f in facilities() if f["ccn"] == ccn), None)
+    if row is None:
+        return None
+    return {**row, "curve": [], "state_curve": sample["state_curve"], "explanation": None}
+
+
+def schedule():
+    return _load("schedule_sample.json")
+
+
+def simulate():
+    return _load("simulate_sample.json")
+
+
+def predictability():
+    return _load("predictability.json")
+
+
+def trophy():
+    return _load("trophy.json")
