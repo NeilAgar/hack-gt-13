@@ -31,7 +31,8 @@ By default, give the ratings in plain words and no percentages:
   Pop Quiz lowered the CMS rating by one star because staffing at this home rises around state inspections more
   than at a typical Georgia home. If lowered is false, say the Pop Quiz rating is the same as CMS's.
 - The staffing consistency label (High, Watch or Low) in a few words: High means staffing stays steadier around
-  inspections, Watch means it's unclear, Low means staffing rises around inspections.
+  inspections, Watch means it's unclear, Low means that across at least two inspections, staffing rises
+  around inspections more than at a typical Georgia home.
 - Do not read out score_pct, ci_low, ci_high, n_surveys, adjust_reason or any other number unless the caller asks.
 
 Only if the caller asks why, for the numbers, or for more detail:
