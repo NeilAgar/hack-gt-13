@@ -1,5 +1,7 @@
-"""Data access for the API. Serves fixtures/ until real tables land in data/processed/."""
+"""Data access for the API. Family endpoints serve fixtures/ until A's tables land in data/processed/.
+Regulator endpoints call B's models/ live, falling back to fixtures/ if models can't load."""
 import json
+import logging
 from functools import lru_cache
 from pathlib import Path
 
@@ -7,6 +9,8 @@ ROOT = Path(__file__).resolve().parent.parent
 FIXTURES = ROOT / "fixtures"
 
 SOURCE = "fixtures"
+
+log = logging.getLogger(__name__)
 
 
 def _load(name):
@@ -42,15 +46,51 @@ def facility(ccn):
     return {**row, "curve": [], "state_curve": sample["state_curve"], "explanation": None}
 
 
-def schedule():
-    return _load("schedule_sample.json")
+@lru_cache
+def _models():
+    """B's inputs and hazard fit, loaded once. None if models/ can't run here."""
+    try:
+        from models.config import DEFAULT_MONTH, PROCESSED_DIR
+        from models.hazard import hazard_table
+        from models.load import load_inputs
+        from models.scheduler import build_schedule
+        from models.simulate import simulate as run_simulation
+
+        d = load_inputs(PROCESSED_DIR)
+        _table, h, lags = hazard_table(d["surveys"], d["facilities"])
+    except Exception:
+        log.exception("models/ unavailable; regulator endpoints serve fixtures")
+        return None
+    return {**d, "h": h, "lags": lags, "month": DEFAULT_MONTH,
+            "build_schedule": build_schedule, "simulate": run_simulation}
 
 
-def simulate():
-    return _load("simulate_sample.json")
+def regulator_source():
+    m = _models()
+    return f"models:{m.get('source', 'unknown')}" if m else "fixtures"
+
+
+def schedule(month, capacity, seed):
+    m = _models()
+    if m is None:
+        return _load("schedule_sample.json")
+    plan = m["build_schedule"](m["facilities"], m["scores"], m["lags"], month=month, capacity=capacity, seed=seed)
+    return {k: plan[k] for k in ("month", "capacity", "selected", "probs")}
+
+
+@lru_cache(maxsize=64)
+def simulate(capacity):
+    m = _models()
+    if m is None:
+        return _load("simulate_sample.json")
+    sim = m["simulate"](m["facilities"], m["scores"], m["surveys"], m["h"], month=m["month"], capacity=capacity)
+    return {k: sim[k] for k in ("months", "status_quo", "popquiz", "reduction_pct")}
 
 
 def predictability():
+    path = ROOT / "data" / "processed" / "predictability.json"
+    if _models() is not None and path.exists():
+        return json.loads(path.read_text())
     return _load("predictability.json")
 
 
