@@ -16,7 +16,8 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 @asynccontextmanager
 async def lifespan(app):
-    data.regulator_source()  # load models/ once at startup, not on the first click
+    data.family_source()  # load A's tables and models/ once at startup, not on the first click
+    data.regulator_source()
     yield
 
 
@@ -26,7 +27,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"],
 
 
 def source_header(response: Response):
-    response.headers["X-Data-Source"] = data.SOURCE
+    response.headers["X-Data-Source"] = data.family_source()
 
 
 def regulator_source_header(response: Response):

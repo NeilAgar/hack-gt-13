@@ -89,3 +89,17 @@ GET  /bedside/events?device_id=        → [raw signed events, by seq]
 ```
 Wording: "time until someone arrived", never "time to help". Nothing here exposes predicted inspection timing
 (`by_days_since_inspection` looks only at past surveys).
+
+# Requests from C (api/), Saturday 11:30
+
+## For D (web/): the API now serves A's real tables; two display bugs with null values
+
+`X-Data-Source: processed`. 356 real homes. Six have no score yet (e.g. 115711, 115718, 115733, 115778,
+11A186, 11A200), and `label` is `null` for every home until A sets the High/Watch/Low cutoffs.
+
+1. **Unscored homes show a made-up score.** `/facility/115711` renders "0% lower than a month later
+   (range 0–0%, based on null inspections)". When `score_pct` is `null`, hide the headline, score and range
+   and show "Not enough inspections with staffing data to score this home yet." (`/explain` already returns
+   that text for these homes.) Map pins for them should be grey/neutral.
+2. **`label: null` renders as "Watch".** Every home currently shows "Staffing consistency: Watch". When
+   `label` is `null`, show no label (or "Label pending"), and use a neutral pin colour.

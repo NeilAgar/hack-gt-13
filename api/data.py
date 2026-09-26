@@ -1,14 +1,21 @@
-"""Data access for the API. Family endpoints serve fixtures/ until A's tables land in data/processed/.
-Regulator endpoints call B's models/ live, falling back to fixtures/ if models can't load."""
+"""Data access for the API. Family endpoints serve A's tables in data/processed/ once facilities and
+scores exist there, otherwise fixtures/. Regulator endpoints call B's models/ live, falling back to
+fixtures/ if models can't load."""
 import json
 import logging
+import math
 from functools import lru_cache
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURES = ROOT / "fixtures"
+PROCESSED = ROOT / "data" / "processed"
 
-SOURCE = "fixtures"
+LIST_FIELDS = ["ccn", "name", "city", "lat", "lon", "overall_star", "staffing_star",
+               "score_pct", "ci_low", "ci_high", "label", "trophy_flag"]
+SCORE_FIELDS = ["n_surveys", "raw_pct", "score_pct", "ci_low", "ci_high", "surge_pct",
+                "weekend_dip_pct", "label", "trophy_flag"]
+LABELS = {"High", "Watch", "Low"}
 
 log = logging.getLogger(__name__)
 
@@ -17,8 +24,66 @@ def _load(name):
     return json.loads((FIXTURES / name).read_text())
 
 
+def _clean(v):
+    """NaN / pd.NA -> None, numpy scalars -> Python, so every value is JSON-safe."""
+    if v is None:
+        return None
+    try:
+        import pandas as pd
+        if pd.isna(v):
+            return None
+    except (TypeError, ValueError):
+        pass
+    if hasattr(v, "item"):
+        v = v.item()
+    return None if isinstance(v, float) and math.isnan(v) else v
+
+
+def _curve(df):
+    return [{"d": int(r.rel_day), "v": _clean(r.hprd_resid_mean)} for r in df.sort_values("rel_day").itertuples()]
+
+
 @lru_cache
-def facilities():
+def _processed():
+    """A's facilities + scores (+ curves), joined once. None until both facilities and scores exist."""
+    fac_path, sc_path, cur_path = (PROCESSED / f"{t}.parquet" for t in ("facilities", "scores", "curves"))
+    if not (fac_path.exists() and sc_path.exists()):
+        return None
+    try:
+        import pandas as pd
+        fac = pd.read_parquet(fac_path)
+        scores = pd.read_parquet(sc_path)
+        curves = pd.read_parquet(cur_path) if cur_path.exists() else None
+    except Exception:
+        log.exception("data/processed unreadable; family endpoints serve fixtures")
+        return None
+    fac["ccn"] = fac["ccn"].astype(str).str.zfill(6)
+    scores["ccn"] = scores["ccn"].astype(str).str.zfill(6)
+    joined = fac.merge(scores[["ccn", *SCORE_FIELDS]], on="ccn", how="left")
+    details = {}
+    for rec in joined.to_dict("records"):
+        row = {k: _clean(v) for k, v in rec.items()}
+        # Labels outside the contract (e.g. A's PLACEHOLDER before cutoffs are set) are served as null.
+        if row.get("label") not in LABELS:
+            row["label"] = None
+        row["trophy_flag"] = bool(row.get("trophy_flag"))
+        if row.get("n_surveys") is not None:
+            row["n_surveys"] = int(row["n_surveys"])
+        details[row["ccn"]] = row
+    by_ccn, state_curve = {}, []
+    if curves is not None:
+        curves["ccn"] = curves["ccn"].astype(str)
+        state_curve = _curve(curves[curves["ccn"] == "GA"])
+        by_ccn = {c: _curve(g) for c, g in curves[curves["ccn"] != "GA"].groupby("ccn")}
+    return {"details": details, "curves": by_ccn, "state_curve": state_curve}
+
+
+def family_source():
+    return "processed" if _processed() else "fixtures"
+
+
+@lru_cache
+def _fixture_facilities():
     return _load("facilities.json")
 
 
@@ -29,18 +94,32 @@ def _facility_sample():
     return sample
 
 
+def facilities():
+    p = _processed()
+    if p is None:
+        return _fixture_facilities()
+    return [{k: d.get(k) for k in LIST_FIELDS} for d in p["details"].values()]
+
+
 def search_facilities(q, limit):
     q = (q or "").strip().lower()
-    rows = [f for f in facilities() if not q or q in f["name"].lower() or q in f["city"].lower() or q == f["ccn"]]
+    rows = [f for f in facilities()
+            if not q or q in (f["name"] or "").lower() or q in (f["city"] or "").lower() or q == f["ccn"]]
     return rows[:limit]
 
 
 def facility(ccn):
-    """Full facility record, or None. Fixtures only have a curve for the sample facility (115999)."""
+    """Full facility record, or None. Homes without a score have null score fields and an empty curve."""
+    p = _processed()
+    if p is not None:
+        row = p["details"].get(ccn)
+        if row is None:
+            return None
+        return {**row, "curve": p["curves"].get(ccn, []), "state_curve": p["state_curve"], "explanation": None}
     sample = _facility_sample()
     if ccn == sample["ccn"]:
         return dict(sample)
-    row = next((f for f in facilities() if f["ccn"] == ccn), None)
+    row = next((f for f in _fixture_facilities() if f["ccn"] == ccn), None)
     if row is None:
         return None
     return {**row, "curve": [], "state_curve": sample["state_curve"], "explanation": None}
@@ -102,4 +181,9 @@ def predictability():
 
 
 def trophy():
-    return _load("trophy.json")
+    p = _processed()
+    if p is None:
+        return _load("trophy.json")
+    rows = [{k: d[k] for k in ("ccn", "name", "overall_star", "score_pct", "ci_low")}
+            for d in p["details"].values() if d["trophy_flag"]]
+    return sorted(rows, key=lambda r: -(r["score_pct"] or 0))
