@@ -168,6 +168,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   height: 0.75rem;
   border-radius: 50%;
   display: inline-block;
+  box-shadow: 0 0 0 1px #1b1b1b; /* same thin dark edge as the map dots, so white stays visible */
 }
 
 .explorer {
@@ -385,3 +386,18 @@ main { flex: 1; }
 .tile-rating { font-size: 1.05rem; }
 .tile-stars { color: #c9852a; letter-spacing: 0.04em; }
 .tile-link { display: inline-block; margin-top: 0.35rem; font-weight: 600; }
+
+/* Map legend: rating fills and consistency rings, drawn like the map dots */
+.map-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 2rem; margin: 0.6rem 0 0.9rem; }
+.legend-title { margin: 0 0 0.25rem; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.map-legend .legend { margin: 0; }
+.ring-swatch {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  display: inline-block;
+  box-sizing: border-box;
+  border: 3.5px solid;
+  background: #b9b3a8; /* neutral center, so the ring is what reads */
+  box-shadow: 0 0 0 1px #1b1b1b;
+}

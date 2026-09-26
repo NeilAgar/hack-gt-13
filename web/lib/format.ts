@@ -1,13 +1,39 @@
 import type { ConsistencyLabel, CurvePoint } from "./types";
 
+/**
+ * Staffing consistency colors, used for the map-dot ring and the label chips. They get darker as
+ * concern rises, and none of them is a rating color (red, orange, yellow, green, blue), so a ring is
+ * never mistaken for a rating. Deep purple was checked with the dataviz palette validator against
+ * every rating fill.
+ */
 export const LABEL_COLOR: Record<ConsistencyLabel, string> = {
-  High: "#1f7a4d",
-  Watch: "#b86e00",
-  Low: "#a33b32",
+  High: "#ffffff",
+  Watch: "#9a958b",
+  Low: "#5b2a86",
 };
 
-/** Pins and chips with no score or no High/Watch/Low label. */
-export const NEUTRAL_COLOR = "#8a8478";
+/** Rings and chips with no score or no High/Watch/Low label. */
+export const NEUTRAL_COLOR = "#e3dccf";
+
+/** Map-dot fill: the Pop Quiz rating, 1 to 5 stars. */
+export const RATING_COLOR: Record<1 | 2 | 3 | 4 | 5, string> = {
+  1: "#d03b3b",
+  2: "#f07a2a",
+  3: "#f2c12e",
+  4: "#2e9e4f",
+  5: "#2a78d6",
+};
+
+/** Map-dot fill for homes CMS hasn't rated. */
+export const UNRATED_COLOR = "#8a8478";
+
+/** Thin line around every map dot; the map is light, so a dark edge keeps pale dots visible. */
+export const DOT_EDGE_COLOR = "#1b1b1b";
+
+export function ratingColor(stars: number | null | undefined): string {
+  const n = Number.isFinite(stars) ? Math.round(stars as number) : NaN;
+  return n >= 1 && n <= 5 ? RATING_COLOR[n as 1 | 2 | 3 | 4 | 5] : UNRATED_COLOR;
+}
 
 export const LABEL_PENDING = "Label pending";
 
@@ -32,7 +58,7 @@ export function isScored(
   return Number.isFinite(scorePct) && Number.isFinite(ciLow) && Number.isFinite(ciHigh);
 }
 
-/** Grey when the home has no score or the consistency label is not set. */
+/** Map-dot ring: the consistency label, or neutral when the home has no score or label. */
 export function pinColor(
   label: string | null | undefined,
   scorePct: number | null | undefined,
