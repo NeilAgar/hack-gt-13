@@ -6,14 +6,13 @@ The remaining hours to the 08:00 Sunday deadline are for polish, Devpost, video 
 |---|---|---|---|---|
 | **A: Data** | `pipeline/` | facilities, daily_staffing, surveys, scores, curves | download scripts, parsers, archive stitching, parquet writers | survey-date anchor, residualization choices, placebo test |
 | **B: Models** | `models/` | hazard, scheduler, simulation | LP formulation, sampler, constraint code, sim harness | game payoffs, shirking model, sanity of results |
-| **C: Backend + integrator** | `api/` (+ `hardware/`) | FastAPI per contract, Grok explain, voice, Makefile/CI, (optional) Call Clock | endpoints, fixtures server, Grok prompt, firmware | guardrails, merges, keeping `main` green |
+| **C: Backend + integrator** | `api/` | FastAPI per contract, Grok explain, voice, Makefile/CI | endpoints, fixtures server, Grok prompt | guardrails, merges, keeping `main` green |
 | **D: Frontend + story** | `web/` | Family and Regulator modes, map, charts; owns the pitch | components, pages, styling | UX copy, demo flow, Devpost narrative |
 
 ## Timeline
 **21:30–22:30, everyone (no coding yet)**
 - Commit AGENTS.md (copy it to CLAUDE.md and .cursorrules), docs/CONTRACTS.md, fixtures/, Makefile stubs and .gitignore.
 - Freeze contract v1. Each person creates a branch and a worktree.
-- If doing hardware: order an LD2410C now, and plan a Micro Center Marietta run at opening Saturday.
 
 **22:30–02:30, parallel build against the contract**
 - **A:** pull Georgia PBJ (2017Q1–2026Q1, API filtered to GA), Inspection Dates and Provider Info. Stitch archived snapshots for older surveys.
@@ -34,7 +33,7 @@ The remaining hours to the 08:00 Sunday deadline are for polish, Devpost, video 
 - **13:00 integration checkpoint:** end-to-end on real data on `main`. If it isn't there, cut scope (see below).
 
 **13:00–18:00: stretch and polish**
-- C: Call Clock hardware (only if parts are in hand and the API is stable), otherwise more voice polish.
+- C: voice polish, API hardening, keep `main` green.
 - A + B: cross-review each other's methods; pick 3 real GA facilities for the demo, checking their CIs are tight.
 - D: design polish and copy; draft the Devpost write-up.
 
@@ -42,11 +41,10 @@ The remaining hours to the 08:00 Sunday deadline are for polish, Devpost, video 
 **After 21:30:** bugfix only; Devpost + 2–3 min video; final rehearsal. Submit well before 08:00.
 
 ## Cut order if behind
-1. Hardware → a slide.
-2. Voice → text explanation only.
-3. Stackelberg LP → risk-weighted proportional probabilities (same constraints).
-4. Archive stitching → 3 surveys per home with wider CIs.
-5. Simulation → a static before/after chart.
+1. Voice → text explanation only.
+2. Stackelberg LP → risk-weighted proportional probabilities (same constraints).
+3. Archive stitching → 3 surveys per home with wider CIs.
+4. Simulation → a static before/after chart.
 
 ## Agentic workflow rules of thumb
 - **Contract first, fixtures always.** Nobody waits on anybody.

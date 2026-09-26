@@ -1,4 +1,4 @@
-# CONTRACTS.md: v1 (freeze by 22:30 Fri)
+# CONTRACTS.md: v1 (FROZEN)
 Change only through a PR labeled `contract` that all 4 owners approve. Bump the version when you change it.
 
 ## Keys and conventions
@@ -20,7 +20,7 @@ ccn, survey_date, survey_type ('health_standard' only), source ('current'|'archi
 
 ### scores
 ccn, n_surveys:int, raw_pct, score_pct (shrunk), ci_low, ci_high, surge_pct, weekend_dip_pct,
-label ('High'|'Watch'|'Low' consistency), trophy_flag:bool (= rbs_proxy_eligible AND ci_low > 0)
+label ('High'|'Watch'|'Low' consistency; cutoffs set by A in docs/DECISIONS.md), trophy_flag:bool (= rbs_proxy_eligible AND ci_low > 0)
 
 ### curves
 ccn (or 'GA' for the state average), rel_day:int (-42..56), hprd_resid_mean, n_obs:int
@@ -38,9 +38,6 @@ POST /explain {ccn} → {text}   (Grok; facts JSON in, 3 sentences out)
 POST /schedule {month:"YYYY-MM", capacity:int, seed?:int}
  → {month, capacity, selected:[{ccn,name,prob,forced:bool,off_hours:bool}], probs:[{ccn,prob,forced}]}
 GET  /simulate?capacity=int
- → {months:36, status_quo:{undetected_shirk_resident_months}, popquiz:{…}, reduction_pct}
+ → {months:36, status_quo:{undetected_shirk_resident_months}, popquiz:{undetected_shirk_resident_months}, reduction_pct}
 GET  /predictability → [{ccn,name,p_next_60d}]   (regulator only)
 GET  /trophy → [{ccn,name,overall_star,score_pct,ci_low}]
-
-## Hardware (optional, C): Call Clock event log (JSONL, hash-chained)
-{seq, ts, device_id, event:'call_on'|'entry'|'cancel', prev_hash, hash, sig}

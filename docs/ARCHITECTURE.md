@@ -114,7 +114,7 @@ There are two modes on one backend:
 See docs/TEAM-PLAN.md for the full timeline.
 - **A, data (`pipeline/`):** ingest, HPRD, event-study score, curves. First Georgia curve by ~01:00 Saturday (go/no-go).
 - **B, models (`models/`):** hazard model, Stackelberg LP, sampler and constraints, simulation.
-- **C, backend + integrator (`api/`, `hardware/`):** FastAPI, Grok explain and voice, Makefile/CI, merges, optional Call Clock.
+- **C, backend + integrator (`api/`):** FastAPI, Grok explain and voice, Makefile/CI, merges.
 - **D, frontend + story (`web/`):** Next.js family and regulator modes, map, charts, pitch and Devpost.
 - Feature freeze candidate Saturday 18:00–21:30, bugfix only after. Devpost and video by Sunday 08:00.
 
