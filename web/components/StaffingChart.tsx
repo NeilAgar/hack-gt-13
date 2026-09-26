@@ -20,34 +20,51 @@ export function StaffingChart({
   curve,
   stateCurve,
   normalP95 = null,
+  xDomain = [-42, 56],
+  showState = true,
+  height = 400,
 }: {
   facilityName: string;
   curve: CurvePoint[];
   stateCurve: CurvePoint[];
   /** This home's normal-day line (95th percentile of its ordinary days); null draws no line. */
   normalP95?: number | null;
+  /** Days shown, relative to the inspection end (day 0). */
+  xDomain?: [number, number];
+  /** Draw the Georgia average line. */
+  showState?: boolean;
+  height?: number;
 }) {
+  const [x0, x1] = xDomain;
+  const span = x1 - x0;
+  const step = span <= 16 ? 1 : span <= 30 ? 2 : 14;
+  const ticks: number[] = [];
+  for (let d = Math.ceil(x0 / step) * step; d <= x1; d += step) ticks.push(d);
   const facilityPoints = (curve ?? []).filter(
-    (point) => Number.isFinite(point?.d) && Number.isFinite(point?.v),
+    (point) => Number.isFinite(point?.d) && Number.isFinite(point?.v) && point.d >= x0 && point.d <= x1,
   );
   if (facilityPoints.length === 0) {
     return <p>not enough inspections</p>;
   }
 
-  const data = mergeCurves(facilityPoints, stateCurve ?? []);
+  const data = mergeCurves(
+    facilityPoints,
+    showState ? (stateCurve ?? []).filter((point) => point.d >= x0 && point.d <= x1) : [],
+  );
   const line = typeof normalP95 === "number" && Number.isFinite(normalP95) ? normalP95 : null;
   const isAbove = (v: unknown) => line !== null && typeof v === "number" && v > line;
 
   return (
-    <div className="chart-wrap" aria-label={`Staffing curve for ${facilityName}`}>
+    <div className="chart-wrap" style={{ height }} aria-label={`Staffing curve for ${facilityName}`}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 18, right: 16, left: 0, bottom: 4 }}>
           <CartesianGrid stroke="#e3d7c6" />
           <XAxis
             dataKey="d"
             type="number"
-            domain={[-42, 56]}
-            ticks={[-42, -28, -14, 0, 14, 28, 42, 56]}
+            domain={[x0, x1]}
+            ticks={ticks}
+            allowDataOverflow
             tick={{ fill: "#5e584e", fontSize: 12 }}
             height={32}
           />
@@ -104,16 +121,18 @@ export function StaffingChart({
             }}
             connectNulls
           />
-          <Line
-            type="monotone"
-            dataKey="state"
-            name="Georgia average"
-            stroke="#5e584e"
-            strokeWidth={2}
-            strokeDasharray="5 4"
-            dot={false}
-            connectNulls
-          />
+          {showState && (
+            <Line
+              type="monotone"
+              dataKey="state"
+              name="Georgia average"
+              stroke="#5e584e"
+              strokeWidth={2}
+              strokeDasharray="5 4"
+              dot={false}
+              connectNulls
+            />
+          )}
         </LineChart>
       </ResponsiveContainer>
     </div>

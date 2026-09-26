@@ -1,12 +1,17 @@
 import { MapView } from "@/components/MapView";
 import { getFacilities } from "@/lib/api";
 import {
+  formatRange,
+  formatSignedPct,
   isConsistencyLabel,
+  isScored,
   LABEL_COLOR,
   LABEL_NOTE,
   LABEL_PENDING,
   NEUTRAL_COLOR,
+  popQuizRating,
   scoreSummary,
+  starString,
 } from "@/lib/format";
 import type { ConsistencyLabel } from "@/lib/types";
 
@@ -67,28 +72,49 @@ export default async function HomePage({
             <ul className="facility-list">
               {facilities.map((facility) => {
                 const label = isConsistencyLabel(facility.label) ? facility.label : null;
+                const rating = popQuizRating(facility.overall_star, facility.adjusted_star);
                 return (
-                <li key={facility.ccn} className="facility-card">
-                  <h2>
-                    <a href={`/facility/${facility.ccn}`}>{facility.name}</a>
-                  </h2>
-                  <p className="meta">
-                    {facility.city} · Care Compare {facility.overall_star}★ · Staffing{" "}
-                    {facility.staffing_star}★
-                  </p>
-                  <p>
-                    <span className="chip">
-                      <span
-                        className="swatch"
-                        style={{ background: label ? LABEL_COLOR[label] : NEUTRAL_COLOR }}
-                        aria-hidden
-                      />
-                      {label ? `Staffing consistency: ${label}` : LABEL_PENDING}
-                    </span>
-                  </p>
-                  <p className="score">
-                    {scoreSummary(facility.score_pct, facility.ci_low, facility.ci_high)}
-                  </p>
+                <li key={facility.ccn}>
+                  <details className="facility-item">
+                    <summary className="facility-toggle">{facility.name}</summary>
+                    <div className="facility-card">
+                      <p className="meta">{facility.city}</p>
+                      {rating.popQuiz !== null ? (
+                        <p className="tile-rating" aria-label={`Pop Quiz rating ${rating.popQuiz} out of 5 stars`}>
+                          <span className="tile-stars" aria-hidden>{starString(rating.popQuiz)}</span>{" "}
+                          <strong>Pop Quiz {rating.popQuiz}★</strong>
+                          {rating.lowered ? (
+                            <span className="lowered-badge small"> ↓ lowered from CMS {rating.cms}★</span>
+                          ) : (
+                            <span className="meta"> · same as CMS</span>
+                          )}
+                        </p>
+                      ) : (
+                        <p className="meta">Not rated by CMS</p>
+                      )}
+                      <p className="meta">
+                        CMS Care Compare {facility.overall_star}★ overall · {facility.staffing_star}★ staffing
+                      </p>
+                      <p>
+                        <span className="chip">
+                          <span
+                            className="swatch"
+                            style={{ background: label ? LABEL_COLOR[label] : NEUTRAL_COLOR }}
+                            aria-hidden
+                          />
+                          {label ? `Staffing consistency: ${label}` : LABEL_PENDING}
+                        </span>
+                      </p>
+                      <p className="score">
+                        {isScored(facility.score_pct, facility.ci_low, facility.ci_high)
+                          ? `Staffing change around inspections: ${formatSignedPct(facility.score_pct as number)} (range ${formatRange(facility.ci_low as number, facility.ci_high as number)})`
+                          : scoreSummary(facility.score_pct, facility.ci_low, facility.ci_high)}
+                      </p>
+                      <a className="tile-link" href={`/facility/${facility.ccn}`}>
+                        See full details →
+                      </a>
+                    </div>
+                  </details>
                 </li>
                 );
               })}
