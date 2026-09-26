@@ -111,11 +111,12 @@ There are two modes on one backend:
 - Credit Chen & Dillender (NBER w34037) and Gandhi, Olenski & Shi (NBER w34491) in the app and on Devpost.
 
 ## Team split (4)
-- **A, data:** ingest, HPRD, and event-study score. First Georgia curve by Friday 2 AM (go/no-go).
-- **B, models:** hazard model and simulation.
-- **C, optimization:** Stackelberg LP, sampler, constraints.
-- **D, product:** FastAPI, Next.js, map, facility page, Grok and voice.
-- Feature freeze Saturday midnight. Devpost and video by Sunday 8 AM.
+See docs/TEAM-PLAN.md for the full timeline.
+- **A, data (`pipeline/`):** ingest, HPRD, event-study score, curves. First Georgia curve by ~01:00 Saturday (go/no-go).
+- **B, models (`models/`):** hazard model, Stackelberg LP, sampler and constraints, simulation.
+- **C, backend + integrator (`api/`, `hardware/`):** FastAPI, Grok explain and voice, Makefile/CI, merges, optional Call Clock.
+- **D, frontend + story (`web/`):** Next.js family and regulator modes, map, charts, pitch and Devpost.
+- Feature freeze candidate Saturday 18:00–21:30, bugfix only after. Devpost and video by Sunday 08:00.
 
 ## 3-minute demo
 1. **Hook:** one Georgia home's staffing curve peaks right before inspections.
