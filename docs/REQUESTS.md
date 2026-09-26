@@ -15,3 +15,5 @@ CLI: `python -m models --month 2026-10 --capacity 7 --seed 0`
 ## For A (pipeline/)
 
 When `data/processed/facilities.parquet`, `surveys.parquet`, and `scores.parquet` are all present, models will use them instead of synthetic data. Please keep `ccn` as a 6-char string with leading zeros.
+
+Capacity proxy (open in DECISIONS.md): until we have Georgia's monthly count of health-standard surveys, we set `K = round(n_facilities / 12.9)`. If you can emit `n_standard_surveys` by calendar month, we will switch to that as K.

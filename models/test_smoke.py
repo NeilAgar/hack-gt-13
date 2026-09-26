@@ -94,3 +94,16 @@ def test_cli_outputs(tmp_path: Path):
     assert summary["n_facilities"] > 0
     # Do not require PROCESSED_DIR in this test (tmp_path only).
     _ = PROCESSED_DIR
+
+
+def test_capacity_sweep_writes_rows(tmp_path: Path):
+    from models.sweep import sweep
+
+    out = sweep(processed_dir=tmp_path, month="2026-10", seed=0, with_sim=False)
+    assert (tmp_path / "sweep.json").exists()
+    assert out["default_capacity"] == default_capacity(out["n_facilities"])
+    assert len(out["rows"]) >= 3
+    caps = [r["capacity"] for r in out["rows"]]
+    assert caps == sorted(caps)
+    assert all(r["n_selected"] <= r["capacity"] or r["n_forced"] >= r["capacity"] for r in out["rows"])
+    assert all(r["solver"] in {"lp", "proportional"} for r in out["rows"])
