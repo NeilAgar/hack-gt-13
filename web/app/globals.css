@@ -292,3 +292,96 @@ main { flex: 1; }
   .map-frame, .facility-list { height: 420px; max-height: 420px; }
   .header-inner { flex-direction: column; align-items: flex-start; }
 }
+
+/* Pop Quiz rating card (facility page) */
+.rating-card {
+  background: var(--card);
+  border: 2px solid var(--teal);
+  border-radius: 14px;
+  padding: 1.1rem 1.2rem;
+  margin: 0.6rem 0 1rem;
+}
+.rating-card.is-lowered { border-color: #a33b32; }
+.rating-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.2rem;
+}
+.rating-block > * { margin: 0.25rem 0; }
+.rating-kicker {
+  font-family: inherit;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 0.2rem;
+}
+.rating-stars { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; margin: 0; }
+.rating-stars span:first-child { font-size: 2.6rem; line-height: 1; color: #c9852a; letter-spacing: 0.04em; }
+.rating-num { font-size: 1.3rem; font-weight: 700; }
+.rating-none { font-size: 1.1rem; }
+.lowered-badge {
+  display: inline-block;
+  background: #a33b32;
+  color: #fff;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+}
+.lowered-badge s { opacity: 0.85; }
+.lowered-badge.small { font-size: 0.82rem; padding: 0.1rem 0.5rem; margin-left: 0.3rem; }
+.same-badge {
+  display: inline-block;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  color: var(--muted);
+}
+.rating-why { font-size: 1rem; line-height: 1.45; }
+.pct-big { font-size: 2.4rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; margin: 0; }
+.cms-row {
+  border-top: 1px solid var(--line);
+  margin-top: 0.9rem;
+  padding-top: 0.6rem;
+  font-weight: 600;
+}
+
+/* Staffing chart: toolbar + advanced section */
+.chart-toolbar { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: space-between; }
+.chart-toolbar .meta { flex: 1 1 280px; }
+.zoom-button, .facility-toggle {
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid var(--teal);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--teal);
+}
+.zoom-button { padding: 0.35rem 0.7rem; font-size: 0.9rem; }
+/* Outline buttons stay readable on hover (the global button:hover sets a dark background). */
+.zoom-button:hover, .facility-toggle:hover { background: var(--cream); color: var(--teal); }
+.facility-item[open] > .facility-toggle:hover { background: var(--teal-deep); color: #fff; }
+.advanced { margin-top: 1rem; border-top: 1px solid var(--line); padding-top: 0.6rem; }
+.advanced summary { cursor: pointer; font-weight: 600; color: var(--teal); }
+
+/* Home list: name buttons that expand into the full tile */
+.facility-item { border-radius: 10px; }
+.facility-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  list-style: none;
+  width: 100%;
+  text-align: left;
+  padding: 0.65rem 0.9rem;
+  font-weight: 600;
+}
+.facility-toggle::-webkit-details-marker { display: none; }
+.facility-toggle::after { content: "▸"; flex: none; }
+.facility-item[open] > .facility-toggle { background: var(--teal); color: #fff; border-radius: 10px 10px 0 0; }
+.facility-item[open] > .facility-toggle::after { content: "▾"; }
+.facility-item[open] > .facility-card { border-top: none; border-radius: 0 0 12px 12px; }
+.tile-rating { font-size: 1.05rem; }
+.tile-stars { color: #c9852a; letter-spacing: 0.04em; }
+.tile-link { display: inline-block; margin-top: 0.35rem; font-weight: 600; }

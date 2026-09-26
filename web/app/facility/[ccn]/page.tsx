@@ -1,19 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { StaffingChart } from "@/components/StaffingChart";
+import { RatingCard } from "@/components/RatingCard";
+import { StaffingChartPanel } from "@/components/StaffingChartPanel";
 import { explainFacility, FacilityNotFoundError, getFacilities, getFacility } from "@/lib/api";
-import {
-  formatPct,
-  formatRange,
-  isConsistencyLabel,
-  isScored,
-  LABEL_COLOR,
-  LABEL_PENDING,
-  NEUTRAL_COLOR,
-  scoreHeadline,
-  UNSCORED_COPY,
-} from "@/lib/format";
+import { isConsistencyLabel } from "@/lib/format";
 import type { FacilityDetail } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -66,13 +57,9 @@ export default async function FacilityPage({
   const place = facility?.county ? `${city}, ${facility.county}` : city;
   const rawLabel = facility?.label ?? summary?.label;
   const label = isConsistencyLabel(rawLabel) ? rawLabel : null;
-  const overall = facility?.overall_star ?? summary?.overall_star ?? 0;
-  const staffing = facility?.staffing_star ?? summary?.staffing_star ?? 0;
   const score = facility?.score_pct ?? summary?.score_pct ?? null;
   const ciLow = facility?.ci_low ?? summary?.ci_low ?? null;
   const ciHigh = facility?.ci_high ?? summary?.ci_high ?? null;
-  const scored = isScored(score, ciLow, ciHigh);
-  const headline = scoreHeadline(score, ciLow, ciHigh, facility?.n_surveys);
 
   return (
     <>
@@ -83,81 +70,30 @@ export default async function FacilityPage({
         {place}
       </p>
       <h1>{name}</h1>
-      <p className="meta">
-        Care Compare {overall}★ overall · {staffing}★ staffing
-        {facility && Number.isFinite(facility.health_star)
-          ? ` · ${facility.health_star}★ health inspection`
-          : ""}
-      </p>
-      <p>
-        <span className="chip">
-          <span
-            className="swatch"
-            style={{ background: label ? LABEL_COLOR[label] : NEUTRAL_COLOR }}
-            aria-hidden
-          />
-          {label ? `Staffing consistency: ${label}` : LABEL_PENDING}
-        </span>
-      </p>
-      {scored && headline ? (
-        <p className="score-headline">
-          {headline}
-          {facility ? "" : " The number of inspections behind this score is not in the current record."}
-        </p>
-      ) : (
-        <p className="score-headline">{UNSCORED_COPY}</p>
-      )}
-      {scored ? (
-        <div className="stat-row">
-          <div className="stat">
-            <b>{formatPct(score as number)}%</b>
-            <span>Score</span>
-          </div>
-          <div className="stat">
-            <b>{formatRange(ciLow as number, ciHigh as number)}</b>
-            <span>Uncertainty range</span>
-          </div>
-          {facility && Number.isFinite(facility.n_surveys) ? (
-            <div className="stat">
-              <b>{facility.n_surveys}</b>
-              <span>Past inspections in the score</span>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-      {scored ? (
-        <p>
-          This score measures survey-responsive staffing: the percent difference in nurse hours per
-          resident between the 14 days through the day before an inspection ended and about a month
-          later.
-        </p>
-      ) : null}
+      <RatingCard
+        overallStar={facility?.overall_star ?? summary?.overall_star}
+        adjustedStar={facility?.adjusted_star ?? summary?.adjusted_star}
+        adjustReason={facility?.adjust_reason}
+        staffingStar={facility?.staffing_star ?? summary?.staffing_star}
+        healthStar={facility?.health_star}
+        label={label}
+        scorePct={score}
+        ciLow={ciLow}
+        ciHigh={ciHigh}
+        nSurveys={facility?.n_surveys}
+      />
       <p className="note">PBJ staffing data is self-reported.</p>
 
       <div className="stack">
         <section className="panel" aria-labelledby="curve-heading">
           <h2 id="curve-heading">Staffing across the inspection cycle</h2>
           {facility && (facility.curve ?? []).some((point) => Number.isFinite(point?.d) && Number.isFinite(point?.v)) ? (
-            <>
-              <p className="meta">
-                Residual nurse hours per resident day. The horizontal axis is days relative to the
-                inspection. Day 0 is the day the inspection ended. The solid line is this home and the
-                dashed line is the Georgia average. This describes past inspections, not a future visit.
-              </p>
-              <StaffingChart
-                facilityName={facility.name}
-                curve={facility.curve ?? []}
-                stateCurve={facility.state_curve ?? []}
-                normalP95={facility.normal_p95 ?? null}
-              />
-              {typeof facility.normal_p95 === "number" && (
-                <p className="meta">
-                  Dotted line: this home&apos;s staffing stays below it on 95% of ordinary days (more than 60
-                  days from any inspection). Large dots mark days above it. About 1 ordinary day in 20
-                  crosses it by chance, so look for spikes that cross it right before inspections end.
-                </p>
-              )}
-            </>
+            <StaffingChartPanel
+              facilityName={facility.name}
+              curve={facility.curve ?? []}
+              stateCurve={facility.state_curve ?? []}
+              normalP95={facility.normal_p95 ?? null}
+            />
           ) : (
             <p>not enough inspections</p>
           )}

@@ -10,6 +10,8 @@ export type FacilitySummary = {
   lat: number;
   lon: number;
   overall_star: number;
+  /** v1.1: CMS overall rating minus one star for clear, repeated survey-responsive staffing. */
+  adjusted_star?: number | null;
   staffing_star: number;
   score_pct: number | null;
   ci_low: number | null;
@@ -56,6 +58,9 @@ export type FacilityDetail = {
   curve: CurvePoint[];
   state_curve: CurvePoint[];
   explanation: string | null;
+  /** v1.1: Pop Quiz rating and the plain-language reason for it. */
+  adjusted_star?: number | null;
+  adjust_reason?: string | null;
   /** v1.2: this home's normal-day line, same units as curve.v (95th percentile of ordinary days). */
   normal_p95?: number | null;
   /** v1.2: ordinary days (more than 60 days from any inspection) the line is based on. */

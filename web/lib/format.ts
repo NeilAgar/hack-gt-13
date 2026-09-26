@@ -51,6 +51,37 @@ export function formatPct(value: number): string {
   }).format(value);
 }
 
+/** "+3.7%" / "−2.1%": the sign matters for a change. */
+export function formatSignedPct(value: number): string {
+  const sign = value > 0 ? "+" : value < 0 ? "−" : "";
+  return `${sign}${formatPct(Math.abs(value))}%`;
+}
+
+/** Five stars, filled up to `n` (1–5). */
+export function starString(n: number): string {
+  const filled = Math.max(0, Math.min(5, Math.round(n)));
+  return "★".repeat(filled) + "☆".repeat(5 - filled);
+}
+
+export type PopQuizRating = {
+  cms: number | null;
+  popQuiz: number | null;
+  lowered: boolean;
+};
+
+/**
+ * The Pop Quiz rating: the API's adjusted_star, or the CMS rating unchanged when the API
+ * doesn't send one (fixtures). Never higher than CMS.
+ */
+export function popQuizRating(
+  overallStar: number | null | undefined,
+  adjustedStar: number | null | undefined,
+): PopQuizRating {
+  const cms = Number.isFinite(overallStar) && (overallStar as number) > 0 ? (overallStar as number) : null;
+  const popQuiz = Number.isFinite(adjustedStar) ? (adjustedStar as number) : cms;
+  return { cms, popQuiz, lowered: cms !== null && popQuiz !== null && popQuiz < cms };
+}
+
 export function formatRange(ciLow: number, ciHigh: number): string {
   return `${formatPct(ciLow)}–${formatPct(ciHigh)}%`;
 }

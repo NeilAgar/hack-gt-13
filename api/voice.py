@@ -18,21 +18,41 @@ TOKEN_SECONDS = 300
 SAMPLE_RATE = 24000
 PAGE = Path(__file__).resolve().parent / "static" / "voice.html"
 
-INSTRUCTIONS = """You are the Pop Quiz voice line. You help families understand how a Georgia nursing home staffs
-around state inspections. Speak plainly and briefly: two or three sentences per answer.
-Rules:
+INSTRUCTIONS = """You are the Pop Quiz voice line. You help families understand Georgia nursing homes. Speak plainly
+and briefly: two or three short sentences per answer.
+
+Finding the home:
 - Before answering about any home, call lookup_facility with the name or city the caller said. If it returns
   several matches, ask which one they mean. If it returns no matches, say you could not find that home; if it
-  also returns did_you_mean names, offer those names but give no numbers until the caller picks one.
+  also returns did_you_mean names, offer those names but say nothing about any home until the caller picks one.
+
+By default, give the ratings in plain words and no percentages:
+- The Pop Quiz rating (adjusted_star) out of 5 stars, and the CMS rating (overall_star). If lowered is true, say
+  Pop Quiz lowered the CMS rating by one star because staffing at this home rises around state inspections more
+  than at a typical Georgia home. If lowered is false, say the Pop Quiz rating is the same as CMS's.
+- The staffing consistency label (High, Watch or Low) in a few words: High means staffing stays steadier around
+  inspections, Watch means it's unclear, Low means staffing rises around inspections.
+- Do not read out score_pct, ci_low, ci_high, n_surveys, adjust_reason or any other number unless the caller asks.
+
+Only if the caller asks why, for the numbers, or for more detail:
+- score_pct is how much higher nurse hours per resident were in the 14 days through the day before past
+  inspections ended than a month later, in percent. Whenever you give score_pct, also give its uncertainty range
+  (ci_low to ci_high) and how many inspections it is based on (n_surveys). adjust_reason explains the rating in
+  one sentence and may be read as written.
+- That window includes the days inspectors were on site, so never say staffing rose before inspectors arrived or
+  in anticipation of an inspection.
 - Use only the numbers lookup_facility returns. Never compute, round differently, estimate or add any number.
-- score_pct is how much higher nurse hours per resident were in the 14 days through the day before past inspections ended than a month
-  later, in percent. That window includes the days inspectors were on site, so never say staffing rose before
-  inspectors arrived or in anticipation of an inspection. ci_low to ci_high is its uncertainty range; always say it. n_surveys is how many inspections
-  it is based on. If there is no score_pct, say there are not enough inspections to score the home yet.
+
+If the caller asks where the ratings come from: the star ratings start from CMS, the federal Centers for
+Medicare & Medicaid Services. Pop Quiz analyzed CMS's public daily staffing data (the Payroll-Based Journal)
+around each home's state inspections, and lowers the CMS rating by one star only when a home's staffing clearly
+rises around inspections more than a typical Georgia home's. The staffing data is self-reported by the homes.
+
+Always:
 - Call the pattern "survey-responsive staffing". Never say "gaming", "cheating" or "fraud".
-- Mention that staffing data is self-reported by the facility.
 - Never say or guess when the next inspection might happen, even if asked. Say you can't share that.
-- Suggest questions to ask on a tour: weekend staffing, agency staff, RN coverage at night."""
+- If there is no rating or score, say there are not enough inspections to rate the home yet.
+- If it helps, suggest questions to ask on a tour: weekend staffing, agency staff, RN coverage at night."""
 
 LOOKUP_TOOL = {
     "type": "function",
@@ -69,6 +89,18 @@ def _words(text):
     return {w for w in re.findall(r"[a-z0-9]+", (text or "").lower()) if w not in _FILLER and len(w) > 1}
 
 
+def _voice_facts(fac):
+    """/explain's whitelisted facts plus the Pop Quiz rating, so Grok can lead with the ratings."""
+    facts = facts_for(fac)
+    adjusted, cms = fac.get("adjusted_star"), fac.get("overall_star")
+    if adjusted is not None:
+        facts["adjusted_star"] = adjusted
+        facts["lowered"] = cms is not None and adjusted < cms
+    if fac.get("adjust_reason"):
+        facts["adjust_reason"] = fac["adjust_reason"]
+    return facts
+
+
 def lookup(query, limit=3):
     """Facts for homes whose name/city contains every distinctive word the caller said, so "Stevens Park in
     Augusta" matches but "Sunrise Manor" never returns some other Manor's numbers. Partial matches come back
@@ -82,7 +114,7 @@ def lookup(query, limit=3):
         elif hits:
             partial.append((hits, f["name"]))
     if full:
-        return {"query": query, "matches": [facts_for(data.facility(c)) | {"ccn": c} for c in sorted(full)[:limit]]}
+        return {"query": query, "matches": [_voice_facts(data.facility(c)) | {"ccn": c} for c in sorted(full)[:limit]]}
     partial.sort(key=lambda x: (-x[0], x[1]))
     return {"query": query, "matches": [], "did_you_mean": [n for _, n in partial[:limit]]}
 
@@ -117,4 +149,5 @@ def voice_lookup(q: str = Query(..., min_length=2, max_length=100)):
 
 @router.get("/voice", response_class=HTMLResponse)
 def voice_page():
-    return PAGE.read_text()
+    # The "Back to Pop Quiz" link points at the web app, which runs separately from this API.
+    return PAGE.read_text().replace("__WEB_URL__", os.environ.get("WEB_URL", "http://localhost:3000"))
