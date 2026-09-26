@@ -10,6 +10,8 @@ import {
   LABEL_PENDING,
   NEUTRAL_COLOR,
   popQuizRating,
+  RATING_COLOR,
+  UNRATED_COLOR,
   scoreSummary,
   starString,
 } from "@/lib/format";
@@ -31,10 +33,11 @@ export default async function HomePage({
     <>
       <h1>Staffing consistency around state inspections</h1>
       <p className="lede">
-        Search a Georgia nursing home or a city. Pins show Staffing Consistency: whether nurse
-        hours per resident are higher in the 14 days through the day before past inspections ended
-        than about a month later. A larger positive number means more survey-responsive staffing.
-        Every score includes its uncertainty range. PBJ staffing data is self-reported.
+        Search a Georgia nursing home or a city. On the map, each dot&apos;s color is the home&apos;s Pop Quiz
+        rating and its ring is its staffing consistency: whether nurse hours per resident are higher in
+        the 14 days through the day before past inspections ended than about a month later, a sign of
+        survey-responsive staffing. Every score includes its uncertainty range. PBJ staffing data is
+        self-reported.
       </p>
       <form className="search" action="/" method="get" role="search">
         <label className="sr-only" htmlFor="q">
@@ -50,20 +53,40 @@ export default async function HomePage({
         />
         <button type="submit">Search</button>
       </form>
-      <ul className="legend">
-        {LABELS.map((label) => (
-          <li key={label}>
-            <span className="swatch" style={{ background: LABEL_COLOR[label] }} aria-hidden />
-            <strong>{label}</strong>
-            <span>{LABEL_NOTE[label]}</span>
-          </li>
-        ))}
-        <li>
-          <span className="swatch" style={{ background: NEUTRAL_COLOR }} aria-hidden />
-          <strong>{LABEL_PENDING}</strong>
-          <span>No score yet, or the High / Watch / Low cutoff is not set.</span>
-        </li>
-      </ul>
+      <div className="map-legend" aria-label="Map legend">
+        <div>
+          <p className="legend-title">Dot color: Pop Quiz rating</p>
+          <ul className="legend">
+            {([1, 2, 3, 4, 5] as const).map((stars) => (
+              <li key={stars}>
+                <span className="swatch" style={{ background: RATING_COLOR[stars] }} aria-hidden />
+                <strong>{stars}★</strong>
+              </li>
+            ))}
+            <li>
+              <span className="swatch" style={{ background: UNRATED_COLOR }} aria-hidden />
+              <span>Not rated by CMS</span>
+            </li>
+          </ul>
+        </div>
+        <div>
+          <p className="legend-title">Ring: staffing consistency</p>
+          <ul className="legend">
+            {LABELS.map((label) => (
+              <li key={label}>
+                <span className="ring-swatch" style={{ borderColor: LABEL_COLOR[label] }} aria-hidden />
+                <strong>{label}</strong>
+                <span>{LABEL_NOTE[label]}</span>
+              </li>
+            ))}
+            <li>
+              <span className="ring-swatch" style={{ borderColor: NEUTRAL_COLOR }} aria-hidden />
+              <strong>{LABEL_PENDING}</strong>
+              <span>Not enough inspections to score yet.</span>
+            </li>
+          </ul>
+        </div>
+      </div>
       <div className="explorer">
         <section aria-label="Search results">
           {facilities.length === 0 ? (

@@ -16,7 +16,12 @@ import {
 } from "../lib/api.ts";
 import {
   isScored,
+  LABEL_COLOR,
+  NEUTRAL_COLOR,
   pinColor,
+  RATING_COLOR,
+  ratingColor,
+  UNRATED_COLOR,
   reductionCaption,
   scoreHeadline,
   scoreSummary,
@@ -246,9 +251,15 @@ describe("scores and simulation copy", () => {
     assert.equal(isScored(null, null, null), false);
     assert.equal(scoreHeadline(null, 0, 0, null), null);
     assert.equal(scoreSummary(null, null, null), UNSCORED_COPY);
-    assert.equal(pinColor(null, 4.2), "#8a8478");
-    assert.equal(pinColor("Watch", null), "#8a8478");
-    assert.equal(pinColor("Low", 4.2), "#a33b32");
+    assert.equal(pinColor(null, 4.2), NEUTRAL_COLOR);
+    assert.equal(pinColor("Watch", null), NEUTRAL_COLOR);
+    assert.equal(pinColor("Low", 4.2), LABEL_COLOR.Low);
+    assert.equal(ratingColor(1), "#d03b3b");
+    assert.equal(ratingColor(5), "#2a78d6");
+    assert.equal(ratingColor(null), UNRATED_COLOR);
+    assert.equal(ratingColor(0), UNRATED_COLOR);
+    // A ring color is never a rating color.
+    for (const ring of Object.values(LABEL_COLOR)) assert.ok(!Object.values(RATING_COLOR).includes(ring));
   });
 
   test("the headline names the window through the day before the inspection ended", () => {
