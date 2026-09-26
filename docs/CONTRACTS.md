@@ -1,4 +1,4 @@
-# CONTRACTS.md: v1.1 (FROZEN)
+# CONTRACTS.md: v1.2 (FROZEN)
 Change only through a PR labeled `contract` that all 4 owners approve. Bump the version when you change it.
 
 ## Keys and conventions
@@ -33,10 +33,15 @@ GET  /facilities?q=&limit=50
  → [{ccn,name,city,lat,lon,overall_star,adjusted_star,staffing_star,score_pct,ci_low,ci_high,label,trophy_flag}]
 GET  /facility/{ccn}
  → {…facility fields, score fields, adjusted_star:int|null, adjust_reason:string|null,
+    normal_p95:float|null, normal_days:int|null,
     curve:[{d,v}], state_curve:[{d,v}], explanation:string|null}
  (v1.1) adjusted_star = CMS overall_star, minus one star for clear, repeated survey-responsive staffing;
  never higher than overall_star, never below 1, null when CMS has no overall rating. adjust_reason always
  explains the result in plain language (null only in fixture mode). Rules: docs/DECISIONS.md "Adjusted star rating".
+ (v1.2) normal_p95 = this home's "normal day" line for the curve chart, same units as curve.v: the 95th
+ percentile of its staffing on ordinary days (>60 days from any inspection), averaged over as many days as
+ inspections in its curve. normal_days = ordinary days it is based on. null when there is no curve or <60 days.
+ Rules: docs/DECISIONS.md "Normal-day line".
 POST /explain {ccn} → {text}   (Grok; facts JSON in, 3 sentences out)
 --- regulator (header X-Demo-Role: regulator) ---
 POST /schedule {month:"YYYY-MM", capacity:int, seed?:int}

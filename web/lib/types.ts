@@ -56,6 +56,10 @@ export type FacilityDetail = {
   curve: CurvePoint[];
   state_curve: CurvePoint[];
   explanation: string | null;
+  /** v1.2: this home's normal-day line, same units as curve.v (95th percentile of ordinary days). */
+  normal_p95?: number | null;
+  /** v1.2: ordinary days (more than 60 days from any inspection) the line is based on. */
+  normal_days?: number | null;
 };
 
 /** POST /explain */

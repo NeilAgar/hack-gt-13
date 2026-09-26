@@ -148,7 +148,15 @@ export default async function FacilityPage({
                 facilityName={facility.name}
                 curve={facility.curve ?? []}
                 stateCurve={facility.state_curve ?? []}
+                normalP95={facility.normal_p95 ?? null}
               />
+              {typeof facility.normal_p95 === "number" && (
+                <p className="meta">
+                  Dotted line: this home&apos;s staffing stays below it on 95% of ordinary days (more than 60
+                  days from any inspection). Large dots mark days above it. About 1 ordinary day in 20
+                  crosses it by chance, so look for spikes that cross it right before inspections end.
+                </p>
+              )}
             </>
           ) : (
             <p>not enough inspections</p>
