@@ -19,7 +19,14 @@ function FitBounds({ facilities }: { facilities: FacilitySummary[] }) {
   return null;
 }
 
+function placed(facilities: FacilitySummary[]): FacilitySummary[] {
+  return facilities.filter(
+    (facility) => Number.isFinite(facility.lat) && Number.isFinite(facility.lon),
+  );
+}
+
 export default function FacilityMap({ facilities }: { facilities: FacilitySummary[] }) {
+  const pins = placed(facilities);
   return (
     <div className="map-frame" role="region" aria-label="Map of nursing homes colored by staffing consistency">
       <MapContainer center={[32.7, -83.4]} zoom={7} scrollWheelZoom={false}>
@@ -27,16 +34,16 @@ export default function FacilityMap({ facilities }: { facilities: FacilitySummar
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <FitBounds facilities={facilities} />
-        {facilities.map((facility) => (
+        <FitBounds facilities={pins} />
+        {pins.map((facility) => (
           <CircleMarker
             key={facility.ccn}
             center={[facility.lat, facility.lon]}
-            radius={10}
+            radius={8}
             pathOptions={{
               color: "#fffdf9",
               weight: 2,
-              fillColor: LABEL_COLOR[facility.label],
+              fillColor: LABEL_COLOR[facility.label] ?? "#5e584e",
               fillOpacity: 1,
             }}
           >

@@ -14,6 +14,7 @@ import {
   getTrophy,
   postSchedule,
 } from "../lib/api.ts";
+import { topPredictability, visibleProbabilities } from "../lib/regulator.ts";
 
 const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -208,6 +209,30 @@ describe("regulator header", () => {
   });
 });
 
+describe("regulator lists", () => {
+  test("hides zero probabilities and keeps the top predictability scores", () => {
+    const probs = [
+      { ccn: "000001", prob: 0, forced: false },
+      { ccn: "000002", prob: 0.2, forced: false },
+      { ccn: "000003", prob: 0.9, forced: true },
+    ];
+    assert.deepEqual(
+      visibleProbabilities(probs, false).map((row) => row.ccn),
+      ["000003", "000002"],
+    );
+    assert.equal(visibleProbabilities(probs, true).at(-1)?.prob, 0);
+
+    const rows = Array.from({ length: 25 }, (_, index) => ({
+      ccn: String(index).padStart(6, "0"),
+      name: `Home ${index}`,
+      p_next_60d: index / 100,
+    }));
+    const top = topPredictability(rows);
+    assert.equal(top.length, 20);
+    assert.equal(top[0]?.ccn, "000024");
+    assert.ok(top[0].p_next_60d > top[19].p_next_60d);
+  });
+});
 describe("family copy", () => {
   test("user-facing files follow the language rules", () => {
     const files = [...walk(path.join(webRoot, "app")), ...walk(path.join(webRoot, "components"))];
@@ -221,6 +246,20 @@ describe("family copy", () => {
     const family = ["page.tsx", path.join("facility", "[ccn]", "page.tsx")]
       .map((name) => readFileSync(path.join(webRoot, "app", name), "utf8"))
       .join("\n");
-    assert.doesNotMatch(family, /p_next_60d|predictability|X-Demo-Role/);
+    assert.doesNotMatch(family, /p_next_60d|predictability|X-Demo-Role|getPredictability/);
+
+    const familySurfaces = [
+      path.join(webRoot, "app", "page.tsx"),
+      path.join(webRoot, "app", "facility", "[ccn]", "page.tsx"),
+      path.join(webRoot, "components", "FacilityMap.tsx"),
+      path.join(webRoot, "components", "MapView.tsx"),
+      path.join(webRoot, "components", "StaffingChart.tsx"),
+    ];
+    const surfaceText = familySurfaces.map((file) => readFileSync(file, "utf8")).join("\n");
+    assert.doesNotMatch(surfaceText, /p_next_60d|getPredictability|PredictabilityPanel/);
+    assert.match(text, /not enough inspections/);
+    assert.match(text, /Illustrative model/);
+    assert.match(text, /undetected shirk resident-months/);
+    assert.match(text, /never shown to families/);
   });
 });

@@ -13,7 +13,7 @@ export default async function HomePage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q = "" } = await searchParams;
-  const facilities = await getFacilities(q);
+  const facilities = await getFacilities(q, 400);
 
   return (
     <>

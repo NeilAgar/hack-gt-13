@@ -24,13 +24,17 @@ export function StaffingChart({
   curve: CurvePoint[];
   stateCurve: CurvePoint[];
 }) {
-  const data = mergeCurves(curve, stateCurve);
-  if (data.length === 0) {
-    return <p>The staffing curve is not available for this home.</p>;
+  const facilityPoints = (curve ?? []).filter(
+    (point) => Number.isFinite(point?.d) && Number.isFinite(point?.v),
+  );
+  if (facilityPoints.length === 0) {
+    return <p>not enough inspections</p>;
   }
 
+  const data = mergeCurves(facilityPoints, stateCurve ?? []);
+
   return (
-    <div className="chart-wrap">
+    <div className="chart-wrap" aria-label={`Staffing curve for ${facilityName}`}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 18, right: 16, left: 0, bottom: 4 }}>
           <CartesianGrid stroke="#e3d7c6" />
@@ -61,7 +65,7 @@ export function StaffingChart({
           <Line
             type="monotone"
             dataKey="facility"
-            name={facilityName}
+            name="This home"
             stroke="#a33b32"
             strokeWidth={2.4}
             dot={{ r: 3 }}
