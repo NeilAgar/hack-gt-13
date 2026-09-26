@@ -1,7 +1,9 @@
+import { PredictabilityPanel } from "@/components/PredictabilityPanel";
 import { SchedulePanel } from "@/components/SchedulePanel";
-import { getFacilities, getTrophy, postSchedule } from "@/lib/api";
+import { SimulationChart } from "@/components/SimulationChart";
+import { getFacilities, getPredictability, getSimulate, getTrophy, postSchedule } from "@/lib/api";
 import { formatPct, formatRange } from "@/lib/format";
-import type { ScheduleRequest, ScheduleResponse } from "@/lib/types";
+import type { ScheduleRequest, ScheduleResponse, SimulateResponse } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -10,8 +12,18 @@ async function generateSchedule(body: ScheduleRequest): Promise<ScheduleResponse
   return postSchedule(body);
 }
 
+async function loadSimulation(capacity: number): Promise<SimulateResponse> {
+  "use server";
+  return getSimulate(capacity);
+}
+
 export default async function RegulatorPage() {
-  const [trophy, facilities] = await Promise.all([getTrophy(), getFacilities("", 500)]);
+  const [trophy, facilities, simulation, predictability] = await Promise.all([
+    getTrophy(),
+    getFacilities("", 400),
+    getSimulate(3),
+    getPredictability(),
+  ]);
   const byCcn = new Map(facilities.map((facility) => [facility.ccn, facility]));
 
   return (
@@ -31,6 +43,7 @@ export default async function RegulatorPage() {
         {trophy.length === 0 ? (
           <p>No homes are flagged.</p>
         ) : (
+          <div className="table-scroll">
           <table>
             <thead>
               <tr>
@@ -49,7 +62,7 @@ export default async function RegulatorPage() {
                   : `lower bound ${formatPct(row.ci_low)}%`;
                 return (
                   <tr key={row.ccn}>
-                    <td>{row.name}</td>
+                    <td className="wrap-name">{row.name}</td>
                     <td>{row.ccn}</td>
                     <td>{row.overall_star}★</td>
                     <td>{formatPct(row.score_pct)}%</td>
@@ -59,10 +72,13 @@ export default async function RegulatorPage() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </section>
 
       <SchedulePanel generateSchedule={generateSchedule} />
+      <SimulationChart initialSimulation={simulation} loadSimulation={loadSimulation} />
+      <PredictabilityPanel rows={predictability} />
     </>
   );
 }

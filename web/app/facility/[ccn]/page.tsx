@@ -119,7 +119,7 @@ export default async function FacilityPage({
       <div className="stack">
         <section className="panel" aria-labelledby="curve-heading">
           <h2 id="curve-heading">Staffing across the inspection cycle</h2>
-          {facility ? (
+          {facility && (facility.curve ?? []).some((point) => Number.isFinite(point?.d) && Number.isFinite(point?.v)) ? (
             <>
               <p className="meta">
                 Residual nurse hours per resident day. The horizontal axis is days relative to the
@@ -128,12 +128,12 @@ export default async function FacilityPage({
               </p>
               <StaffingChart
                 facilityName={facility.name}
-                curve={facility.curve}
-                stateCurve={facility.state_curve}
+                curve={facility.curve ?? []}
+                stateCurve={facility.state_curve ?? []}
               />
             </>
           ) : (
-            <p>The staffing curve is not available for this home in the current record.</p>
+            <p>not enough inspections</p>
           )}
         </section>
 

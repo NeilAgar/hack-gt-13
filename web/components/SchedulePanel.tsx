@@ -3,7 +3,10 @@
 import { useState, type FormEvent } from "react";
 
 import { currentMonth, formatProbability } from "@/lib/format";
+import { visibleProbabilities } from "@/lib/regulator";
 import type { ScheduleRequest, ScheduleResponse } from "@/lib/types";
+
+const CAPACITY_MAX = 40;
 
 export function SchedulePanel({
   generateSchedule,
@@ -15,6 +18,7 @@ export function SchedulePanel({
   const [result, setResult] = useState<ScheduleResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [showAllProbs, setShowAllProbs] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -33,6 +37,7 @@ export function SchedulePanel({
   }
 
   return (
+    <>
     <section className="panel" aria-labelledby="schedule-heading" style={{ marginTop: "1rem" }}>
       <h2 id="schedule-heading">Inspection schedule</h2>
       <p className="meta">
@@ -51,14 +56,28 @@ export function SchedulePanel({
         </label>
         <label>
           Inspector capacity
-          <input
-            type="number"
-            min={1}
-            step={1}
-            value={capacity}
-            onChange={(event) => setCapacity(Number(event.target.value))}
-            required
-          />
+          <span className="capacity-control">
+            <input
+              type="range"
+              min={1}
+              max={CAPACITY_MAX}
+              step={1}
+              value={Number.isInteger(capacity) ? capacity : 1}
+              aria-valuemin={1}
+              aria-valuemax={CAPACITY_MAX}
+              aria-valuenow={Number.isInteger(capacity) ? capacity : 1}
+              onChange={(event) => setCapacity(Number(event.target.value))}
+            />
+            <input
+              type="number"
+              min={1}
+              max={CAPACITY_MAX}
+              step={1}
+              value={capacity}
+              onChange={(event) => setCapacity(Number(event.target.value))}
+              required
+            />
+          </span>
         </label>
         <button type="submit" disabled={pending}>
           {pending ? "Generating…" : "Generate"}
@@ -83,7 +102,7 @@ export function SchedulePanel({
             <tbody>
               {result.selected.map((row) => (
                 <tr key={row.ccn}>
-                  <td>{row.name}</td>
+                  <td className="wrap-name">{row.name}</td>
                   <td>{row.ccn}</td>
                   <td>{formatProbability(row.prob)}</td>
                   <td>{row.forced ? "Yes" : "No"}</td>
@@ -93,26 +112,32 @@ export function SchedulePanel({
             </tbody>
           </table>
           <h3>Probability each home is chosen</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>CCN</th>
-                <th>Probability</th>
-                <th>Forced</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.probs.map((row) => (
-                <tr key={row.ccn}>
-                  <td>{row.ccn}</td>
-                  <td>{formatProbability(row.prob)}</td>
-                  <td>{row.forced ? "Yes" : "No"}</td>
+          <button type="button" onClick={() => setShowAllProbs((current) => !current)}>
+            {showAllProbs ? "Show only homes above 0%" : "Show all"}
+          </button>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>CCN</th>
+                  <th>Probability</th>
+                  <th>Forced</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {visibleProbabilities(result.probs, showAllProbs).map((row) => (
+                  <tr key={row.ccn}>
+                    <td>{row.ccn}</td>
+                    <td>{formatProbability(row.prob)}</td>
+                    <td>{row.forced ? "Yes" : "No"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : null}
     </section>
+    </>
   );
 }

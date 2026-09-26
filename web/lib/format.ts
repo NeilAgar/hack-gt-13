@@ -12,6 +12,10 @@ export const LABEL_NOTE: Record<ConsistencyLabel, string> = {
   Low: "Nurse hours run higher before inspections than afterward.",
 };
 
+export function formatCount(value: number): string {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
+}
+
 export function formatPct(value: number): string {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 1,

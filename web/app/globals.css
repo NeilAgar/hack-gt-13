@@ -88,6 +88,10 @@ a:hover { color: var(--teal-deep); }
 
 main { padding: 1.5rem 0 2.5rem; }
 
+h1, h2, h3, td, th, .wrap-name {
+  overflow-wrap: anywhere;
+}
+
 h1, h2, h3 {
   font-family: Georgia, "Iowan Old Style", Palatino, serif;
   font-weight: 600;
@@ -189,6 +193,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 0.9rem 1rem;
+  overflow-x: auto;
 }
 
 .facility-card h2 { font-size: 1.08rem; margin: 0; }
@@ -259,8 +264,13 @@ th { font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; colo
 }
 
 .schedule-form label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.92rem; }
-.schedule-form input[type="number"] { width: 7rem; }
+.schedule-form input[type="number"] { width: 5rem; }
 .schedule-form input[type="month"] { width: 11rem; }
+.schedule-form input[type="range"] { width: min(16rem, 100%); accent-color: var(--teal); }
+.capacity-control { display: flex; align-items: center; gap: 0.7rem; }
+.chart-short { height: 280px; }
+.table-scroll { max-height: 28rem; overflow: auto; }
+.wrap-name { max-width: 28rem; }
 
 .error { color: #8d2b24; }
 
