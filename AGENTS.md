@@ -14,7 +14,7 @@ Full spec: docs/ARCHITECTURE.md. Data and API contract: docs/CONTRACTS.md. **The
 |---|---|---|
 | `pipeline/` | A (data) | ingest, cleaning, HPRD, event study, scores, curves |
 | `models/` | B (models) | hazard model, Stackelberg scheduler, simulation |
-| `api/` | C (backend) | FastAPI, Grok explain, voice, (optional) `hardware/` Call Clock |
+| `api/` | C (backend) | FastAPI, Grok explain, voice |
 | `web/` | D (frontend) | Next.js family + regulator UI |
 | `docs/`, `fixtures/` | shared | change only through a PR labeled `contract` that all owners approve |
 
