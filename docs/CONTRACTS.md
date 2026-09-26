@@ -1,4 +1,4 @@
-# CONTRACTS.md: v1 (FROZEN)
+# CONTRACTS.md: v1.1 (FROZEN)
 Change only through a PR labeled `contract` that all 4 owners approve. Bump the version when you change it.
 
 ## Keys and conventions
@@ -30,9 +30,13 @@ ccn, weeks_since_last:int, p_survey_week, p_next_60d
 
 ## API (C serves, D consumes). Base /api
 GET  /facilities?q=&limit=50
- → [{ccn,name,city,lat,lon,overall_star,staffing_star,score_pct,ci_low,ci_high,label,trophy_flag}]
+ → [{ccn,name,city,lat,lon,overall_star,adjusted_star,staffing_star,score_pct,ci_low,ci_high,label,trophy_flag}]
 GET  /facility/{ccn}
- → {…facility fields, score fields, curve:[{d,v}], state_curve:[{d,v}], explanation:string|null}
+ → {…facility fields, score fields, adjusted_star:int|null, adjust_reason:string|null,
+    curve:[{d,v}], state_curve:[{d,v}], explanation:string|null}
+ (v1.1) adjusted_star = CMS overall_star, minus one star for clear, repeated survey-responsive staffing;
+ never higher than overall_star, never below 1, null when CMS has no overall rating. adjust_reason always
+ explains the result in plain language (null only in fixture mode). Rules: docs/DECISIONS.md "Adjusted star rating".
 POST /explain {ccn} → {text}   (Grok; facts JSON in, 3 sentences out)
 --- regulator (header X-Demo-Role: regulator) ---
 POST /schedule {month:"YYYY-MM", capacity:int, seed?:int}
