@@ -98,3 +98,67 @@ def test_template_verdict_follows_ci():
     assert "called survey-responsive" in explain_mod.template(FAC)
     flat = {**FAC, "score_pct": -0.8, "ci_low": -4.0, "ci_high": 2.4}
     assert "0.8% lower" in explain_mod.template(flat) and "no clear sign" in explain_mod.template(flat)
+
+
+SCHEDULE_KEYS = {"month", "capacity", "selected", "probs"}
+SIMULATE_KEYS = {"months", "status_quo", "popquiz", "reduction_pct"}
+
+
+def test_schedule_follows_requested_capacity_and_month():
+    for k in (5, 9):
+        r = client.post("/api/schedule", json={"month": "2026-11", "capacity": k, "seed": 1}, headers=REG)
+        s = r.json()
+        assert r.headers["X-Data-Source"].startswith("models:")
+        assert set(s) == SCHEDULE_KEYS
+        assert s["month"] == "2026-11" and s["capacity"] == k and len(s["selected"]) == k
+        assert abs(sum(p["prob"] for p in s["probs"]) - k) < 1e-3
+        assert all(p["prob"] == 1.0 for p in s["probs"] if p["forced"])
+
+
+def test_schedule_seed_reproduces_plan():
+    body = {"month": "2026-11", "capacity": 6, "seed": 3}
+    first = client.post("/api/schedule", json=body, headers=REG).json()
+    assert client.post("/api/schedule", json=body, headers=REG).json() == first
+
+
+def test_simulate_from_models_matches_contract():
+    r = client.get("/api/simulate", params={"capacity": 6}, headers=REG)
+    assert r.headers["X-Data-Source"].startswith("models:")
+    assert set(r.json()) == SIMULATE_KEYS and r.json()["months"] == 36
+
+
+def test_regulator_falls_back_to_fixtures_without_models(monkeypatch):
+    from api import data
+    monkeypatch.setattr(data, "_models", lambda: None)
+    data.simulate.cache_clear()
+    r = client.post("/api/schedule", json={"month": "2026-10", "capacity": 3}, headers=REG)
+    assert r.headers["X-Data-Source"] == "fixtures" and r.json() == data._load("schedule_sample.json")
+    assert client.get("/api/simulate?capacity=3", headers=REG).json() == data._load("simulate_sample.json")
+    data.simulate.cache_clear()
+
+
+def test_trophy_still_labelled_fixtures():
+    assert client.get("/api/trophy", headers=REG).headers["X-Data-Source"] == "fixtures"
+
+
+def test_schedule_capacity_above_eligible_pool_is_consistent():
+    s = client.post("/api/schedule", json={"month": "2026-10", "capacity": 1000, "seed": 1}, headers=REG).json()
+    assert s["capacity"] == len(s["selected"]) < 1000
+
+
+def test_schedule_rejects_negative_seed():
+    r = client.post("/api/schedule", json={"month": "2026-10", "capacity": 3, "seed": -1}, headers=REG)
+    assert r.status_code == 422
+
+
+def test_predictability_comes_from_models_not_file():
+    import json
+    from api import data
+    rows = client.get("/api/predictability", headers=REG).json()
+    assert len(rows) == len(data._models()["facilities"]) and set(rows[0]) == {"ccn", "name", "p_next_60d"}
+    assert rows == sorted(rows, key=lambda r: (-r["p_next_60d"], r["ccn"]))
+    on_disk = data.ROOT / "data" / "processed" / "predictability.json"
+    if on_disk.exists():  # same inputs as `make models`; the hazard fit can differ slightly across library versions
+        disk = {r["ccn"]: r["p_next_60d"] for r in json.loads(on_disk.read_text())}
+        assert set(disk) == {r["ccn"] for r in rows}
+        assert all(abs(r["p_next_60d"] - disk[r["ccn"]]) < 1e-2 for r in rows)

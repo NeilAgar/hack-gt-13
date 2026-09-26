@@ -1,4 +1,6 @@
 """Pop Quiz API. Serves docs/CONTRACTS.md v1 under /api."""
+import secrets
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -11,7 +13,14 @@ from api.explain import explain
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-app = FastAPI(title="Pop Quiz API")
+
+@asynccontextmanager
+async def lifespan(app):
+    data.regulator_source()  # load models/ once at startup, not on the first click
+    yield
+
+
+app = FastAPI(title="Pop Quiz API", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"],
                    allow_methods=["*"], allow_headers=["*"])
 
@@ -20,13 +29,18 @@ def source_header(response: Response):
     response.headers["X-Data-Source"] = data.SOURCE
 
 
+def regulator_source_header(response: Response):
+    response.headers["X-Data-Source"] = data.regulator_source()
+
+
 def require_regulator(x_demo_role: str | None = Header(default=None)):
     if x_demo_role != "regulator":
         raise HTTPException(403, "Regulator mode only")
 
 
 public = APIRouter(prefix="/api", dependencies=[Depends(source_header)])
-regulator = APIRouter(prefix="/api", dependencies=[Depends(source_header), Depends(require_regulator)])
+regulator = APIRouter(prefix="/api", dependencies=[Depends(require_regulator)])
+from_models = [Depends(regulator_source_header)]
 
 
 def _get_facility(ccn):
@@ -57,27 +71,28 @@ def explain_endpoint(req: ExplainRequest):
 
 class ScheduleRequest(BaseModel):
     month: str = Field(pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
-    capacity: int = Field(ge=1)
-    seed: int | None = None
+    capacity: int = Field(ge=1, le=1000)
+    seed: int | None = Field(default=None, ge=0)
 
 
-@regulator.post("/schedule")
+@regulator.post("/schedule", dependencies=from_models)
 def schedule(req: ScheduleRequest):
-    # Fixture mode returns the sample plan as is; B's scheduler replaces this.
-    return data.schedule()
+    # No seed means a fresh draw on every Generate; pass one to reproduce a plan.
+    seed = req.seed if req.seed is not None else secrets.randbelow(2**31)
+    return data.schedule(req.month, req.capacity, seed)
 
 
-@regulator.get("/simulate")
-def simulate(capacity: int = Query(..., ge=1)):
-    return data.simulate()
+@regulator.get("/simulate", dependencies=from_models)
+def simulate(capacity: int = Query(..., ge=1, le=1000)):
+    return data.simulate(capacity)
 
 
-@regulator.get("/predictability")
+@regulator.get("/predictability", dependencies=from_models)
 def predictability():
     return data.predictability()
 
 
-@regulator.get("/trophy")
+@regulator.get("/trophy", dependencies=[Depends(source_header)])
 def trophy():
     return data.trophy()
 
