@@ -25,7 +25,8 @@ def _ensure_processed() -> None:
         main()
         return
     scores = pd.read_parquet(PROCESSED / "scores.parquet")
-    if not set(scores["label"].astype(str).unique()) <= {"High", "Watch", "Low"}:
+    inside = (scores["ci_low"] <= scores["score_pct"]) & (scores["score_pct"] <= scores["ci_high"])
+    if (not set(scores["label"].astype(str).unique()) <= {"High", "Watch", "Low"}) or (not inside.all()):
         from pipeline.scores import build_scores
 
         facilities = pd.read_parquet(PROCESSED / "facilities.parquet")
@@ -56,6 +57,8 @@ def test_contract_tables_and_counts() -> None:
     assert (surveys["source"] == "current").all()
     assert set(scores["label"].unique()) <= {"High", "Watch", "Low"}
     assert (scores.loc[scores["trophy_flag"], "ci_low"] > 0).all()
+    assert (scores["ci_low"] <= scores["score_pct"]).all()
+    assert (scores["score_pct"] <= scores["ci_high"]).all()
     sample = scores.iloc[0]
     headline = format_headline(
         sample["score_pct"], sample["ci_low"], sample["ci_high"], int(sample["n_surveys"])

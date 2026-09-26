@@ -144,13 +144,14 @@ def _facility_ci(
     return float(np.percentile(draws, 2.5)), float(np.percentile(draws, 97.5))
 
 
-def empirical_bayes(raw: pd.Series, sigma2: pd.Series) -> pd.Series:
+def empirical_bayes(raw: pd.Series, sigma2: pd.Series) -> tuple[pd.Series, pd.Series, float]:
     state_mean = float(raw.mean())
     tau2 = float(max(0.0, raw.var(ddof=1) - sigma2.mean()))
     w = tau2 / (tau2 + sigma2)
     w = w.fillna(0.0)
     print(f"EB tau2={tau2:.4f} state_mean_raw={state_mean:.3f}%")
-    return w * raw + (1.0 - w) * state_mean
+    score = w * raw + (1.0 - w) * state_mean
+    return score, w, state_mean
 
 
 def build_scores(daily: pd.DataFrame, surveys: pd.DataFrame, facilities: pd.DataFrame) -> pd.DataFrame:
@@ -177,8 +178,14 @@ def build_scores(daily: pd.DataFrame, surveys: pd.DataFrame, facilities: pd.Data
         lo, hi = _facility_ci(ccn, part, panel, rng, clip)
         ci_low_s[ccn] = lo
         ci_high_s[ccn] = hi
-    score = empirical_bayes(raw, sigma2)
+    score, w, state_mean = empirical_bayes(raw, sigma2)
     dip = weekend_dip(daily)
+
+    ci_low = pd.Series(ci_low_s).reindex(raw.index)
+    ci_high = pd.Series(ci_high_s).reindex(raw.index)
+    w = w.reindex(raw.index)
+    ci_low = w * ci_low + (1.0 - w) * state_mean
+    ci_high = w * ci_high + (1.0 - w) * state_mean
 
     rbs = facilities.set_index("ccn")["rbs_proxy_eligible"]
     names = facilities.set_index("ccn")["name"]
@@ -188,8 +195,8 @@ def build_scores(daily: pd.DataFrame, surveys: pd.DataFrame, facilities: pd.Data
             "n_surveys": n_surveys.reindex(raw.index).astype("int64").to_numpy(),
             "raw_pct": raw.to_numpy(),
             "score_pct": score.reindex(raw.index).to_numpy(),
-            "ci_low": pd.Series(ci_low_s).reindex(raw.index).to_numpy(),
-            "ci_high": pd.Series(ci_high_s).reindex(raw.index).to_numpy(),
+            "ci_low": ci_low.to_numpy(),
+            "ci_high": ci_high.to_numpy(),
             "surge_pct": surge.reindex(raw.index).to_numpy(),
             "weekend_dip_pct": dip.reindex(raw.index).to_numpy(),
         }
