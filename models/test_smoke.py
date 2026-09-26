@@ -21,8 +21,9 @@ CONTRACT_HAZARD_COLS = {"ccn", "weeks_since_last", "p_survey_week", "p_next_60d"
 
 
 @pytest.fixture(scope="module")
-def inputs():
-    return load_inputs()
+def inputs(tmp_path_factory):
+    # Always synthetic: real parquet in data/processed must not change smoke tests.
+    return load_inputs(processed_dir=tmp_path_factory.mktemp("synthetic_inputs"))
 
 
 def test_synthetic_bunching_near_nber(inputs):
@@ -48,7 +49,8 @@ def test_schedule_constraints(inputs):
     plan = build_schedule(inputs["facilities"], inputs["scores"], lags, month="2026-10", capacity=k, seed=1)
     assert plan["month"] == "2026-10"
     n_forced = int((lags["weeks_since_last"] >= FORCED_WEEKS).sum())
-    assert n_forced <= len(plan["selected"]) <= plan["capacity"] or len(plan["selected"]) == plan["capacity"]
+    assert n_forced <= len(plan["selected"])
+    assert plan["capacity"] == len(plan["selected"])
     n_sel = len(plan["selected"])
     n_off = sum(1 for r in plan["selected"] if r["off_hours"])
     assert n_off / max(n_sel, 1) >= OFF_HOURS_MIN_SHARE - 1e-9
@@ -140,5 +142,30 @@ def test_capacity_sweep_writes_rows(tmp_path: Path):
     assert len(out["rows"]) >= 3
     caps = [r["capacity"] for r in out["rows"]]
     assert caps == sorted(caps)
-    assert all(r["n_selected"] <= r["capacity"] or r["n_forced"] >= r["capacity"] for r in out["rows"])
+    assert all(r["n_selected"] == r["capacity"] for r in out["rows"])
     assert all(r["solver"] in {"lp", "proportional"} for r in out["rows"])
+
+
+def test_capacity_capped_to_selected(inputs):
+    table, h, lags = hazard_table(inputs["surveys"], inputs["facilities"])
+    plan = build_schedule(
+        inputs["facilities"], inputs["scores"], lags, month="2026-10", capacity=200, seed=0
+    )
+    assert plan["capacity"] == len(plan["selected"])
+    n_eligible = len(inputs["facilities"])
+    assert plan["capacity"] <= n_eligible
+    _ = table, h
+
+
+def test_predictability_reproducible(tmp_path: Path):
+    from models.__main__ import run
+
+    a = tmp_path / "a"
+    b = tmp_path / "b"
+    a.mkdir()
+    b.mkdir()
+    run(processed_dir=a, month="2026-10", seed=0)
+    run(processed_dir=b, month="2026-10", seed=0)
+    pa = (a / "predictability.json").read_text(encoding="utf-8")
+    pb = (b / "predictability.json").read_text(encoding="utf-8")
+    assert pa == pb

@@ -21,6 +21,17 @@ def default_capacity(n_facilities: int) -> int:
     return max(1, int(round(n_facilities / TARGET_AVG_MONTHS)))
 
 
+def default_capacity_from_surveys(n_facilities: int, surveys: pd.DataFrame | None = None) -> int:
+    """Prefer Georgia's historical monthly standard-survey count when we have it."""
+    base = default_capacity(n_facilities)
+    if surveys is None or surveys.empty:
+        return base
+    months = pd.to_datetime(surveys["survey_date"]).dt.to_period("M").nunique()
+    if int(months) < 6:
+        return base
+    return max(1, int(round(len(surveys) / float(months))))
+
+
 def risk_weights(facilities: pd.DataFrame, scores: pd.DataFrame) -> pd.Series:
     fac = facilities.copy()
     fac["ccn"] = fac["ccn"].astype(str).str.zfill(6)
@@ -31,9 +42,15 @@ def risk_weights(facilities: pd.DataFrame, scores: pd.DataFrame) -> pd.Series:
     score = pd.to_numeric(df.get("score_pct"), errors="coerce").fillna(0.0).clip(lower=0)
     harm = pd.to_numeric(df.get("harm_citations_3y"), errors="coerce").fillna(0.0)
     ij = pd.to_numeric(df.get("ij_citations_3y"), errors="coerce").fillna(0.0)
-    weekend = pd.to_numeric(df.get("weekend_dip_pct"), errors="coerce").fillna(0.0)
-    weekend_hit = (-weekend).clip(lower=0)
-    agency = pd.to_numeric(df.get("agency_share"), errors="coerce").fillna(0.0).clip(lower=0)
+    weekend = pd.to_numeric(df.get("weekend_dip_pct"), errors="coerce")
+    if not isinstance(weekend, pd.Series):
+        weekend = pd.Series(0.0, index=df.index)
+    weekend = weekend.fillna(0.0)
+    weekend_hit = weekend.abs()
+    if "agency_share" in df.columns:
+        agency = pd.to_numeric(df["agency_share"], errors="coerce").fillna(0.0).clip(lower=0)
+    else:
+        agency = pd.Series(0.0, index=df.index)
     risk = residents * (
         0.25 + score / 10.0 + 0.2 * harm + 0.4 * ij + weekend_hit / 20.0 + 2.0 * agency
     )
@@ -53,45 +70,35 @@ def _try_pulp_lp(
         return None
     n = len(ccns)
     k_eff = float(capacity)
-    # Forced homes consume coverage even if K is tight (legal 15.9-month clock).
     n_forced = int(forced.sum())
     if n_forced > k_eff:
         k_eff = float(n_forced)
 
-    prob = pulp.LpProblem("popquiz_origami", pulp.LpMinimize)
-    c = [pulp.LpVariable(f"c_{i}", lowBound=0, upBound=1) for i in range(n)]
-    u = pulp.LpVariable("u", lowBound=0)
-    # Tie-break: cover more residual risk once attacker payoff is equalized.
-    eps = 1e-4
-    prob += u - eps * pulp.lpSum(float(risk[i]) * c[i] for i in range(n))
-    for i in range(n):
-        if banned[i]:
-            prob += c[i] == 0
-            continue
-        if forced[i]:
-            prob += c[i] == 1
-            continue
-        # u >= risk_i * (1 - c_i)
-        prob += u + float(risk[i]) * c[i] >= float(risk[i])
-    eligible = [c[i] for i in range(n) if not banned[i]]
-    if eligible:
-        prob += pulp.lpSum(eligible) <= k_eff
-    try:
-        solvers = []
-        if hasattr(pulp, "COIN_CMD"):
-            solvers.append(pulp.COIN_CMD(msg=False, timeLimit=20))
-        solvers.append(pulp.PULP_CBC_CMD(msg=False, timeLimit=20))
-        status = None
-        for solver in solvers:
-            try:
-                status = prob.solve(solver)
-                break
-            except Exception:
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        warnings.filterwarnings("ignore", message=".*PULP_CBC_CMD.*")
+        prob = pulp.LpProblem("popquiz_origami", pulp.LpMinimize)
+        c = [pulp.LpVariable(f"c_{i}", lowBound=0, upBound=1) for i in range(n)]
+        u = pulp.LpVariable("u", lowBound=0)
+        eps = 1e-4
+        prob += u - eps * pulp.lpSum(float(risk[i]) * c[i] for i in range(n))
+        for i in range(n):
+            if banned[i]:
+                prob += c[i] == 0
                 continue
-        if status is None:
+            if forced[i]:
+                prob += c[i] == 1
+                continue
+            prob += u + float(risk[i]) * c[i] >= float(risk[i])
+        eligible = [c[i] for i in range(n) if not banned[i]]
+        if eligible:
+            prob += pulp.lpSum(eligible) <= k_eff
+        try:
+            status = prob.solve(pulp.PULP_CBC_CMD(msg=False, timeLimit=20))
+        except Exception:
             return None
-    except Exception:
-        return None
     if pulp.LpStatus[status] != "Optimal":
         return None
     out = np.zeros(n)
@@ -222,10 +229,12 @@ def build_schedule(
     banned = banned & ~forced
 
     k = int(capacity) if capacity is not None else default_capacity(len(ccns))
-    k = max(k, int(forced.sum()))
+    n_forced = int((forced & ~banned).sum())
+    n_eligible = int((~banned).sum())
+    k = max(k, n_forced)
+    k = min(k, max(n_eligible, n_forced, 1))
     probs, method = solve_coverage(ccns, risk, forced, banned, k)
     idx = sample_selected(ccns, probs, forced, banned, k, seed)
-    # Prefer higher-prob first in the published list.
     idx = sorted(idx, key=lambda i: (-probs[i], ccns[i]))
     off = mark_off_hours(len(idx), seed)
 
@@ -247,7 +256,7 @@ def build_schedule(
     probs_out.sort(key=lambda r: (-r["prob"], r["ccn"]))
     return {
         "month": month,
-        "capacity": k,
+        "capacity": len(selected),
         "solver": method,
         "selected": selected,
         "probs": probs_out,

@@ -9,7 +9,7 @@ from pathlib import Path
 from models.config import DEFAULT_MONTH, PROCESSED_DIR, SYNTHETIC_N_HOMES
 from models.hazard import bunching_share, hazard_table
 from models.load import load_inputs
-from models.scheduler import build_schedule, default_capacity
+from models.scheduler import build_schedule, default_capacity_from_surveys
 from models.simulate import simulate
 
 
@@ -28,7 +28,7 @@ def run(
     table, h, lags = hazard_table(surveys, fac)
     table.to_parquet(processed_dir / "hazard.parquet", index=False)
 
-    k = capacity if capacity is not None else default_capacity(len(fac))
+    k = capacity if capacity is not None else default_capacity_from_surveys(len(fac), surveys)
     plan = build_schedule(fac, scores, lags, month=month, capacity=k, seed=seed)
     (processed_dir / "schedule.json").write_text(json.dumps(plan, indent=2), encoding="utf-8")
 
@@ -52,7 +52,9 @@ def run(
             }
         )
     pred.sort(key=lambda r: (-r["p_next_60d"], r["ccn"]))
-    (processed_dir / "predictability.json").write_text(json.dumps(pred, indent=2), encoding="utf-8")
+    (processed_dir / "predictability.json").write_text(
+        json.dumps(pred, indent=2) + "\n", encoding="utf-8"
+    )
 
     bunch = bunching_share(surveys)
     summary = {
