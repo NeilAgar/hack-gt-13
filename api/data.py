@@ -57,11 +57,11 @@ def _models():
         from models.simulate import simulate as run_simulation
 
         d = load_inputs(PROCESSED_DIR)
-        _table, h, lags = hazard_table(d["surveys"], d["facilities"])
+        table, h, lags = hazard_table(d["surveys"], d["facilities"])
     except Exception:
         log.exception("models/ unavailable; regulator endpoints serve fixtures")
         return None
-    return {**d, "h": h, "lags": lags, "month": DEFAULT_MONTH,
+    return {**d, "hazard": table, "h": h, "lags": lags, "month": DEFAULT_MONTH,
             "build_schedule": build_schedule, "simulate": run_simulation}
 
 
@@ -75,7 +75,9 @@ def schedule(month, capacity, seed):
     if m is None:
         return _load("schedule_sample.json")
     plan = m["build_schedule"](m["facilities"], m["scores"], m["lags"], month=month, capacity=capacity, seed=seed)
-    return {k: plan[k] for k in ("month", "capacity", "selected", "probs")}
+    # Banned homes can't be picked, so a capacity above the eligible pool yields fewer picks.
+    capacity = min(plan["capacity"], len(plan["selected"]))
+    return {"month": plan["month"], "capacity": capacity, "selected": plan["selected"], "probs": plan["probs"]}
 
 
 @lru_cache(maxsize=64)
@@ -88,10 +90,15 @@ def simulate(capacity):
 
 
 def predictability():
-    path = ROOT / "data" / "processed" / "predictability.json"
-    if _models() is not None and path.exists():
-        return json.loads(path.read_text())
-    return _load("predictability.json")
+    """Current-state p_next_60d per home, from the same model state as /schedule (as models/__main__.py does)."""
+    m = _models()
+    if m is None:
+        return _load("predictability.json")
+    names = dict(zip(m["facilities"]["ccn"].astype(str).str.zfill(6), m["facilities"]["name"]))
+    cur = m["hazard"].merge(m["lags"][["ccn", "weeks_since_last"]], on=["ccn", "weeks_since_last"])
+    rows = [{"ccn": r.ccn, "name": names.get(r.ccn, r.ccn), "p_next_60d": round(float(r.p_next_60d), 6)}
+            for r in cur.itertuples(index=False)]
+    return sorted(rows, key=lambda r: (-r["p_next_60d"], r["ccn"]))
 
 
 def trophy():

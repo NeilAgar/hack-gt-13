@@ -139,3 +139,26 @@ def test_regulator_falls_back_to_fixtures_without_models(monkeypatch):
 
 def test_trophy_still_labelled_fixtures():
     assert client.get("/api/trophy", headers=REG).headers["X-Data-Source"] == "fixtures"
+
+
+def test_schedule_capacity_above_eligible_pool_is_consistent():
+    s = client.post("/api/schedule", json={"month": "2026-10", "capacity": 1000, "seed": 1}, headers=REG).json()
+    assert s["capacity"] == len(s["selected"]) < 1000
+
+
+def test_schedule_rejects_negative_seed():
+    r = client.post("/api/schedule", json={"month": "2026-10", "capacity": 3, "seed": -1}, headers=REG)
+    assert r.status_code == 422
+
+
+def test_predictability_comes_from_models_not_file():
+    import json
+    from api import data
+    rows = client.get("/api/predictability", headers=REG).json()
+    assert len(rows) == len(data._models()["facilities"]) and set(rows[0]) == {"ccn", "name", "p_next_60d"}
+    assert rows == sorted(rows, key=lambda r: (-r["p_next_60d"], r["ccn"]))
+    on_disk = data.ROOT / "data" / "processed" / "predictability.json"
+    if on_disk.exists():  # same inputs as `make models`; the hazard fit can differ slightly across library versions
+        disk = {r["ccn"]: r["p_next_60d"] for r in json.loads(on_disk.read_text())}
+        assert set(disk) == {r["ccn"] for r in rows}
+        assert all(abs(r["p_next_60d"] - disk[r["ccn"]]) < 1e-2 for r in rows)

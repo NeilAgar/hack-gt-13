@@ -72,7 +72,7 @@ def explain_endpoint(req: ExplainRequest):
 class ScheduleRequest(BaseModel):
     month: str = Field(pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
     capacity: int = Field(ge=1, le=1000)
-    seed: int | None = None
+    seed: int | None = Field(default=None, ge=0)
 
 
 @regulator.post("/schedule", dependencies=from_models)
