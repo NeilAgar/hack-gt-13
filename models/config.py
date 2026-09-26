@@ -17,7 +17,9 @@ HAZARD_MAX_WEEK = 90
 NEXT_60D_WEEKS = 9  # 9*7 = 63 days, contract's p_next_60d
 SIM_MONTHS = 36
 
-DEFAULT_MONTH = "2026-10"
-AS_OF_DATE = "2026-10-01"
+# Snapshot date of A's Inspection Dates file (NH_SurveyDates_Aug2026).
+# Do not use a future as-of; that inflates the 15.9-month overdue count.
+DEFAULT_MONTH = "2026-08"
+AS_OF_DATE = "2026-07-31"
 SYNTHETIC_N_HOMES = 80
 SYNTHETIC_SEED = 13

@@ -10,8 +10,8 @@ import pytest
 
 pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
 
-from models.config import FORCED_WEEKS, OFF_HOURS_MIN_SHARE, PROCESSED_DIR
-from models.hazard import bunching_share, hazard_table
+from models.config import DEFAULT_MONTH, FORCED_WEEKS, OFF_HOURS_MIN_SHARE, PROCESSED_DIR
+from models.hazard import bunching_share, gap_summary, hazard_table
 from models.load import load_inputs
 from models.scheduler import build_schedule, default_capacity
 from models.simulate import simulate
@@ -27,8 +27,10 @@ def inputs(tmp_path_factory):
 
 
 def test_synthetic_bunching_near_nber(inputs):
+    """NBER-style 40–60 week bunching is a property of synthetic surveys only."""
     share = bunching_share(inputs["surveys"])
-    assert share >= 0.65, f"expected ~74% of lags in 40–60 weeks, got {share:.3f}"
+    assert share >= 0.65, f"expected ~74% of synthetic lags in 40–60 weeks, got {share:.3f}"
+    assert inputs.get("source") == "synthetic"
 
 
 def test_hazard_schema_and_ccn(inputs):
@@ -46,8 +48,8 @@ def test_hazard_schema_and_ccn(inputs):
 def test_schedule_constraints(inputs):
     table, h, lags = hazard_table(inputs["surveys"], inputs["facilities"])
     k = default_capacity(len(inputs["facilities"]))
-    plan = build_schedule(inputs["facilities"], inputs["scores"], lags, month="2026-10", capacity=k, seed=1)
-    assert plan["month"] == "2026-10"
+    plan = build_schedule(inputs["facilities"], inputs["scores"], lags, month=DEFAULT_MONTH, capacity=k, seed=1)
+    assert plan["month"] == DEFAULT_MONTH
     n_forced = int((lags["weeks_since_last"] >= FORCED_WEEKS).sum())
     assert n_forced <= len(plan["selected"])
     assert plan["capacity"] == len(plan["selected"])
@@ -88,7 +90,7 @@ def test_synthetic_includes_fixture_ccns_and_count(inputs):
 def test_overdue_fixture_is_forced(inputs):
     table, h, lags = hazard_table(inputs["surveys"], inputs["facilities"])
     k = default_capacity(len(inputs["facilities"]))
-    plan = build_schedule(inputs["facilities"], inputs["scores"], lags, month="2026-10", capacity=k, seed=2)
+    plan = build_schedule(inputs["facilities"], inputs["scores"], lags, month=DEFAULT_MONTH, capacity=k, seed=2)
     harbor = next(r for r in plan["probs"] if r["ccn"] == "115999")
     assert harbor["forced"] is True
     assert abs(harbor["prob"] - 1.0) < 1e-6
@@ -98,10 +100,16 @@ def test_overdue_fixture_is_forced(inputs):
 
 def test_same_month_repeat_banned(inputs):
     table, h, lags = hazard_table(inputs["surveys"], inputs["facilities"])
+    as_of_month = 7  # AS_OF_DATE is the July 2026 survey snapshot
     plan = build_schedule(
-        inputs["facilities"], inputs["scores"], lags, month="2026-10", capacity=default_capacity(len(inputs["facilities"])), seed=4
+        inputs["facilities"],
+        inputs["scores"],
+        lags,
+        month="2026-07",
+        capacity=default_capacity(len(inputs["facilities"])),
+        seed=4,
     )
-    banned = lags[(lags["last_month"] == 10) & (lags["weeks_since_last"] < FORCED_WEEKS)]
+    banned = lags[(lags["last_month"] == as_of_month) & (lags["weeks_since_last"] < FORCED_WEEKS)]
     selected = {r["ccn"] for r in plan["selected"]}
     pmap = {r["ccn"]: r["prob"] for r in plan["probs"]}
     for ccn in banned["ccn"]:
@@ -118,7 +126,7 @@ def test_interval_weeks_positive(inputs):
 def test_cli_outputs(tmp_path: Path):
     from models.__main__ import run
 
-    summary = run(processed_dir=tmp_path, month="2026-10", seed=0)
+    summary = run(processed_dir=tmp_path, month=DEFAULT_MONTH, seed=0)
     assert (tmp_path / "hazard.parquet").exists()
     assert (tmp_path / "schedule.json").exists()
     assert (tmp_path / "simulate.json").exists()
@@ -136,7 +144,7 @@ def test_cli_outputs(tmp_path: Path):
 def test_capacity_sweep_writes_rows(tmp_path: Path):
     from models.sweep import sweep
 
-    out = sweep(processed_dir=tmp_path, month="2026-10", seed=0, with_sim=False)
+    out = sweep(processed_dir=tmp_path, month=DEFAULT_MONTH, seed=0, with_sim=False)
     assert (tmp_path / "sweep.json").exists()
     assert out["default_capacity"] == default_capacity(out["n_facilities"])
     assert len(out["rows"]) >= 3
@@ -149,7 +157,7 @@ def test_capacity_sweep_writes_rows(tmp_path: Path):
 def test_capacity_capped_to_selected(inputs):
     table, h, lags = hazard_table(inputs["surveys"], inputs["facilities"])
     plan = build_schedule(
-        inputs["facilities"], inputs["scores"], lags, month="2026-10", capacity=200, seed=0
+        inputs["facilities"], inputs["scores"], lags, month=DEFAULT_MONTH, capacity=200, seed=0
     )
     assert plan["capacity"] == len(plan["selected"])
     n_eligible = len(inputs["facilities"])
@@ -164,8 +172,26 @@ def test_predictability_reproducible(tmp_path: Path):
     b = tmp_path / "b"
     a.mkdir()
     b.mkdir()
-    run(processed_dir=a, month="2026-10", seed=0)
-    run(processed_dir=b, month="2026-10", seed=0)
+    run(processed_dir=a, month=DEFAULT_MONTH, seed=0)
+    run(processed_dir=b, month=DEFAULT_MONTH, seed=0)
     pa = (a / "predictability.json").read_text(encoding="utf-8")
     pb = (b / "predictability.json").read_text(encoding="utf-8")
     assert pa == pb
+
+
+def test_georgia_gaps_match_a_when_parquet_present():
+    """Real GA last-3-cycle gaps: inspections run late, not NBER 74% in 40–60 weeks."""
+    surveys = Path(PROCESSED_DIR) / "surveys.parquet"
+    if not surveys.exists():
+        pytest.skip("A's surveys.parquet not in data/processed")
+    data = load_inputs(processed_dir=PROCESSED_DIR)
+    if data.get("source") != "parquet":
+        pytest.skip("processed dir is not real parquet")
+    gaps = gap_summary(data["surveys"])
+    assert gaps["n_gaps"] > 100
+    assert 65 <= gaps["median_weeks"] <= 85
+    assert 0.12 <= gaps["share_40_60"] <= 0.28
+    table, h, lags = hazard_table(data["surveys"], data["facilities"])
+    n_overdue = int((lags["weeks_since_last"] >= FORCED_WEEKS).sum())
+    assert n_overdue < len(data["facilities"])
+    _ = table, h

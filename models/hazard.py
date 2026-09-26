@@ -178,3 +178,16 @@ def bunching_share(surveys: pd.DataFrame) -> float:
     if gaps.empty:
         return 0.0
     return float(((gaps["weeks_since_last"] >= 40) & (gaps["weeks_since_last"] <= 60)).mean())
+
+
+def gap_summary(surveys: pd.DataFrame) -> dict:
+    """Completed inter-survey gaps. Georgia is late (median ~74 weeks), not NBER 74% in 40–60."""
+    gaps = interval_weeks(surveys)
+    if gaps.empty:
+        return {"n_gaps": 0, "share_40_60": 0.0, "median_weeks": None}
+    weeks = gaps["weeks_since_last"]
+    return {
+        "n_gaps": int(len(weeks)),
+        "share_40_60": round(float(((weeks >= 40) & (weeks <= 60)).mean()), 4),
+        "median_weeks": float(weeks.median()),
+    }
