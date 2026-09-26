@@ -1,0 +1,32 @@
+[
+  {
+    "ccn": "115999",
+    "name": "Sample Harbor Health & Rehab",
+    "p_next_60d": 0.91
+  },
+  {
+    "ccn": "115998",
+    "name": "Sample Oak Ridge Care Center",
+    "p_next_60d": 0.12
+  },
+  {
+    "ccn": "115997",
+    "name": "Sample Pineview Nursing Home",
+    "p_next_60d": 0.64
+  },
+  {
+    "ccn": "115996",
+    "name": "Sample Riverbend Senior Living",
+    "p_next_60d": 0.47
+  },
+  {
+    "ccn": "115995",
+    "name": "Sample Magnolia Gardens Rehab",
+    "p_next_60d": 0.08
+  },
+  {
+    "ccn": "115994",
+    "name": "Sample Coastal Plains Care",
+    "p_next_60d": 0.33
+  }
+]

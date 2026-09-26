@@ -1,0 +1,59 @@
+{
+  "month": "2026-10",
+  "capacity": 3,
+  "selected": [
+    {
+      "ccn": "115999",
+      "name": "Sample Harbor Health & Rehab",
+      "prob": 1.0,
+      "forced": true,
+      "off_hours": false
+    },
+    {
+      "ccn": "115996",
+      "name": "Sample Riverbend Senior Living",
+      "prob": 0.8,
+      "forced": false,
+      "off_hours": true
+    },
+    {
+      "ccn": "115995",
+      "name": "Sample Magnolia Gardens Rehab",
+      "prob": 0.5,
+      "forced": false,
+      "off_hours": false
+    }
+  ],
+  "probs": [
+    {
+      "ccn": "115999",
+      "prob": 1.0,
+      "forced": true
+    },
+    {
+      "ccn": "115998",
+      "prob": 0.35,
+      "forced": false
+    },
+    {
+      "ccn": "115997",
+      "prob": 0.15,
+      "forced": false
+    },
+    {
+      "ccn": "115996",
+      "prob": 0.8,
+      "forced": false
+    },
+    {
+      "ccn": "115995",
+      "prob": 0.5,
+      "forced": false
+    },
+    {
+      "ccn": "115994",
+      "prob": 0.2,
+      "forced": false
+    }
+  ]
+}
