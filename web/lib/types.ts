@@ -2,7 +2,7 @@
 
 export type ConsistencyLabel = "High" | "Watch" | "Low";
 
-/** GET /facilities */
+/** GET /facilities. Score and label are null until the pipeline has both. */
 export type FacilitySummary = {
   ccn: string;
   name: string;
@@ -11,10 +11,10 @@ export type FacilitySummary = {
   lon: number;
   overall_star: number;
   staffing_star: number;
-  score_pct: number;
-  ci_low: number;
-  ci_high: number;
-  label: ConsistencyLabel;
+  score_pct: number | null;
+  ci_low: number | null;
+  ci_high: number | null;
+  label: ConsistencyLabel | null;
   trophy_flag: boolean;
 };
 
@@ -44,14 +44,14 @@ export type FacilityDetail = {
   harm_citations_3y: number;
   ij_citations_3y: number;
   rbs_proxy_eligible: boolean;
-  n_surveys: number;
-  raw_pct: number;
-  score_pct: number;
-  ci_low: number;
-  ci_high: number;
-  surge_pct: number;
-  weekend_dip_pct: number;
-  label: ConsistencyLabel;
+  n_surveys: number | null;
+  raw_pct: number | null;
+  score_pct: number | null;
+  ci_low: number | null;
+  ci_high: number | null;
+  surge_pct: number | null;
+  weekend_dip_pct: number | null;
+  label: ConsistencyLabel | null;
   trophy_flag: boolean;
   curve: CurvePoint[];
   state_curve: CurvePoint[];
@@ -119,6 +119,6 @@ export type TrophyRow = {
   ccn: string;
   name: string;
   overall_star: number;
-  score_pct: number;
-  ci_low: number;
+  score_pct: number | null;
+  ci_low: number | null;
 };

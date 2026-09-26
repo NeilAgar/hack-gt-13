@@ -4,7 +4,7 @@ import "leaflet/dist/leaflet.css";
 import { useEffect } from "react";
 import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
 
-import { formatPct, formatRange, LABEL_COLOR } from "@/lib/format";
+import { isConsistencyLabel, LABEL_PENDING, pinColor, scoreSummary } from "@/lib/format";
 import type { FacilitySummary } from "@/lib/types";
 
 function FitBounds({ facilities }: { facilities: FacilitySummary[] }) {
@@ -35,7 +35,9 @@ export default function FacilityMap({ facilities }: { facilities: FacilitySummar
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <FitBounds facilities={pins} />
-        {pins.map((facility) => (
+        {pins.map((facility) => {
+          const label = isConsistencyLabel(facility.label) ? facility.label : null;
+          return (
           <CircleMarker
             key={facility.ccn}
             center={[facility.lat, facility.lon]}
@@ -43,26 +45,28 @@ export default function FacilityMap({ facilities }: { facilities: FacilitySummar
             pathOptions={{
               color: "#fffdf9",
               weight: 2,
-              fillColor: LABEL_COLOR[facility.label] ?? "#5e584e",
+              fillColor: pinColor(facility.label, facility.score_pct),
               fillOpacity: 1,
             }}
           >
             <Tooltip>
-              {facility.name}: {facility.label}
+              {facility.name}
+              {label ? `: ${label}` : ""}
             </Tooltip>
             <Popup>
               <strong>{facility.name}</strong>
               <br />
               {facility.city} · Care Compare {facility.overall_star}★
               <br />
-              Staffing consistency: {facility.label}
+              {label ? `Staffing consistency: ${label}` : LABEL_PENDING}
               <br />
-              {formatPct(facility.score_pct)}% (range {formatRange(facility.ci_low, facility.ci_high)})
+              {scoreSummary(facility.score_pct, facility.ci_low, facility.ci_high)}
               <br />
               <a href={`/facility/${facility.ccn}`}>Open home</a>
             </Popup>
           </CircleMarker>
-        ))}
+          );
+        })}
       </MapContainer>
     </div>
   );

@@ -3,7 +3,17 @@ import { notFound } from "next/navigation";
 
 import { StaffingChart } from "@/components/StaffingChart";
 import { explainFacility, FacilityNotFoundError, getFacilities, getFacility } from "@/lib/api";
-import { formatPct, formatRange, LABEL_COLOR, scoreHeadline } from "@/lib/format";
+import {
+  formatPct,
+  formatRange,
+  isConsistencyLabel,
+  isScored,
+  LABEL_COLOR,
+  LABEL_PENDING,
+  NEUTRAL_COLOR,
+  scoreHeadline,
+  UNSCORED_COPY,
+} from "@/lib/format";
 import type { FacilityDetail } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -54,12 +64,15 @@ export default async function FacilityPage({
   const name = facility?.name ?? summary?.name ?? "Nursing home";
   const city = facility?.city ?? summary?.city ?? "";
   const place = facility?.county ? `${city}, ${facility.county}` : city;
-  const label = facility?.label ?? summary?.label ?? "Watch";
+  const rawLabel = facility?.label ?? summary?.label;
+  const label = isConsistencyLabel(rawLabel) ? rawLabel : null;
   const overall = facility?.overall_star ?? summary?.overall_star ?? 0;
   const staffing = facility?.staffing_star ?? summary?.staffing_star ?? 0;
-  const score = facility?.score_pct ?? summary?.score_pct ?? 0;
-  const ciLow = facility?.ci_low ?? summary?.ci_low ?? 0;
-  const ciHigh = facility?.ci_high ?? summary?.ci_high ?? 0;
+  const score = facility?.score_pct ?? summary?.score_pct ?? null;
+  const ciLow = facility?.ci_low ?? summary?.ci_low ?? null;
+  const ciHigh = facility?.ci_high ?? summary?.ci_high ?? null;
+  const scored = isScored(score, ciLow, ciHigh);
+  const headline = scoreHeadline(score, ciLow, ciHigh, facility?.n_surveys);
 
   return (
     <>
@@ -78,42 +91,47 @@ export default async function FacilityPage({
       </p>
       <p>
         <span className="chip">
-          <span className="swatch" style={{ background: LABEL_COLOR[label] }} aria-hidden />
-          Staffing consistency: {label}
+          <span
+            className="swatch"
+            style={{ background: label ? LABEL_COLOR[label] : NEUTRAL_COLOR }}
+            aria-hidden
+          />
+          {label ? `Staffing consistency: ${label}` : LABEL_PENDING}
         </span>
       </p>
-      {facility ? (
+      {scored && headline ? (
         <p className="score-headline">
-          {scoreHeadline(facility.score_pct, facility.ci_low, facility.ci_high, facility.n_surveys)}
+          {headline}
+          {facility ? "" : " The number of inspections behind this score is not in the current record."}
         </p>
       ) : (
-        <p className="score-headline">
-          {score === 0
-            ? `Nurse hours per resident in the 2 weeks before past inspections matched the level a month later (range ${formatRange(ciLow, ciHigh)}). `
-            : `Nurse hours per resident were ${formatPct(Math.abs(score))}% ${score > 0 ? "higher" : "lower"} in the 2 weeks before past inspections than a month later (range ${formatRange(ciLow, ciHigh)}). `}
-          The number of inspections behind this score is not in the current record.
-        </p>
+        <p className="score-headline">{UNSCORED_COPY}</p>
       )}
-      <div className="stat-row">
-        <div className="stat">
-          <b>{formatPct(score)}%</b>
-          <span>Score</span>
-        </div>
-        <div className="stat">
-          <b>{formatRange(ciLow, ciHigh)}</b>
-          <span>Uncertainty range</span>
-        </div>
-        {facility ? (
+      {scored ? (
+        <div className="stat-row">
           <div className="stat">
-            <b>{facility.n_surveys}</b>
-            <span>Past inspections in the score</span>
+            <b>{formatPct(score as number)}%</b>
+            <span>Score</span>
           </div>
-        ) : null}
-      </div>
-      <p>
-        This score measures survey-responsive staffing: the percent difference in nurse hours per
-        resident before past inspections versus a month later.
-      </p>
+          <div className="stat">
+            <b>{formatRange(ciLow as number, ciHigh as number)}</b>
+            <span>Uncertainty range</span>
+          </div>
+          {facility && Number.isFinite(facility.n_surveys) ? (
+            <div className="stat">
+              <b>{facility.n_surveys}</b>
+              <span>Past inspections in the score</span>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      {scored ? (
+        <p>
+          This score measures survey-responsive staffing: the percent difference in nurse hours per
+          resident between the 14 days through the day before an inspection ended and about a month
+          later.
+        </p>
+      ) : null}
       <p className="note">PBJ staffing data is self-reported.</p>
 
       <div className="stack">
@@ -123,8 +141,8 @@ export default async function FacilityPage({
             <>
               <p className="meta">
                 Residual nurse hours per resident day. The horizontal axis is days relative to the
-                inspection. Day 0 is the inspection. The solid line is this home and the dashed line is
-                the Georgia average. This describes past inspections, not a future visit.
+                inspection. Day 0 is the day the inspection ended. The solid line is this home and the
+                dashed line is the Georgia average. This describes past inspections, not a future visit.
               </p>
               <StaffingChart
                 facilityName={facility.name}

@@ -10,6 +10,7 @@ import {
   type BedsideEvent,
   type BedsideStats,
 } from "@/components/BedsidePanel";
+import { UNSCORED_COPY } from "@/lib/format";
 
 /**
  * Full-screen live Call Clock timer for the demo screen.
@@ -273,12 +274,15 @@ export default function LivePage() {
           {facility && typeof facility.score_pct === "number" ? (
             <p style={{ margin: 0 }}>
               Nurse hours per resident were <b>{facility.score_pct.toFixed(1)}%</b>{" "}
-              {facility.score_pct >= 0 ? "higher" : "lower"} before past inspections than a month later
+              {facility.score_pct >= 0 ? "higher" : "lower"} in the 14 days through the day before
+              past inspections ended than a month later
               {typeof facility.ci_low === "number" && typeof facility.ci_high === "number"
                 ? ` (range ${facility.ci_low.toFixed(1)}–${facility.ci_high.toFixed(1)}%)`
                 : ""}
               {facility.label ? `. Staffing consistency: ${facility.label}.` : "."}
             </p>
+          ) : facility ? (
+            <p style={{ margin: 0, opacity: 0.85 }}>{UNSCORED_COPY}</p>
           ) : (
             <p style={{ margin: 0, opacity: 0.85 }}>
               {facilityError ? "Pop Quiz score unavailable for this facility." : "Loading score…"}

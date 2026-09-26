@@ -2,7 +2,7 @@ import { PredictabilityPanel } from "@/components/PredictabilityPanel";
 import { SchedulePanel } from "@/components/SchedulePanel";
 import { SimulationChart } from "@/components/SimulationChart";
 import { getFacilities, getPredictability, getSimulate, getTrophy, postSchedule } from "@/lib/api";
-import { formatPct, formatRange } from "@/lib/format";
+import { formatPct, formatRange, isScored } from "@/lib/format";
 import type { ScheduleRequest, ScheduleResponse, SimulateResponse } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -57,15 +57,17 @@ export default async function RegulatorPage() {
             <tbody>
               {trophy.map((row) => {
                 const match = byCcn.get(row.ccn);
-                const range = match
-                  ? formatRange(match.ci_low, match.ci_high)
-                  : `lower bound ${formatPct(row.ci_low)}%`;
+                const range = match && isScored(match.score_pct, match.ci_low, match.ci_high)
+                  ? formatRange(match.ci_low as number, match.ci_high as number)
+                  : Number.isFinite(row.ci_low)
+                    ? `lower bound ${formatPct(row.ci_low as number)}%`
+                    : "—";
                 return (
                   <tr key={row.ccn}>
                     <td className="wrap-name">{row.name}</td>
                     <td>{row.ccn}</td>
                     <td>{row.overall_star}★</td>
-                    <td>{formatPct(row.score_pct)}%</td>
+                    <td>{Number.isFinite(row.score_pct) ? `${formatPct(row.score_pct as number)}%` : "—"}</td>
                     <td>{range}</td>
                   </tr>
                 );
