@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from api import data
 from api.explain import cached, explain
 from api.voice import router as voice_router
+from api.evidence import router as evidence_router
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -103,6 +104,7 @@ def trophy():
 app.include_router(public)
 app.include_router(regulator)
 app.include_router(voice_router)
+app.include_router(evidence_router)
 
 from api.routes.bedside import router as bedside_router  # noqa: E402  Call Clock (hardware/)
 app.include_router(bedside_router)

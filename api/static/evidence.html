@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pop Quiz Evidence</title>
+<style>
+  :root {
+    --page:#f4efe6; --surface:#fffdf8; --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
+    --series:#2a78d6; --band:rgba(42,120,214,.10); --band-2:rgba(137,135,129,.10); --accent:#123f4c;
+  }
+  :root[data-theme="dark"] {
+    --page:#0f1a1f; --surface:#16252c; --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#24363e; --axis:#383835; --border:rgba(255,255,255,.10);
+    --series:#3987e5; --band:rgba(57,135,229,.16); --band-2:rgba(137,135,129,.14); --accent:#5fb3c7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page:#0f1a1f; --surface:#16252c; --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+      --grid:#24363e; --axis:#383835; --border:rgba(255,255,255,.10);
+      --series:#3987e5; --band:rgba(57,135,229,.16); --band-2:rgba(137,135,129,.14); --accent:#5fb3c7;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--page); color:var(--ink); font:16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width:960px; margin:0 auto; padding:24px 16px 56px; }
+  .eyebrow { font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-2); margin:0; }
+  h1 { font-family: Georgia, "Times New Roman", serif; font-size:34px; line-height:1.2; margin:4px 0 10px; }
+  h2 { font-family: Georgia, "Times New Roman", serif; font-size:22px; margin:0 0 4px; }
+  p { margin:0 0 12px; }
+  .lede { font-size:18px; color:var(--ink-2); max-width:62ch; }
+  .panel { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; margin-top:16px; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-top:20px; }
+  .tile { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; }
+  .tile .num { font-size:36px; font-weight:650; font-variant-numeric:tabular-nums; line-height:1.1; }
+  .tile .lbl { color:var(--ink-2); font-size:14px; margin-top:6px; }
+  .charts { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px; margin-top:12px; }
+  .chart h3 { font-size:15px; margin:0 0 2px; }
+  .chart .sub { font-size:13px; color:var(--ink-2); margin:0 0 6px; }
+  .chart svg { width:100%; height:auto; display:block; overflow:visible; }
+  .chart { position:relative; }
+  .tip { position:absolute; pointer-events:none; background:var(--surface); color:var(--ink); border:1px solid var(--border);
+         border-radius:8px; padding:6px 10px; font-size:13px; box-shadow:0 4px 14px rgba(0,0,0,.12); display:none; white-space:nowrap; }
+  .legend { display:flex; gap:16px; flex-wrap:wrap; font-size:13px; color:var(--ink-2); margin-top:10px; }
+  .legend span::before { content:""; display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:6px; vertical-align:-1px; }
+  .legend .on::before { background:var(--band); border:1px solid var(--series); }
+  .legend .base::before { background:var(--band-2); border:1px solid var(--axis); }
+  details { margin-top:12px; }
+  summary { cursor:pointer; color:var(--ink-2); font-size:14px; }
+  .tablewrap { overflow-x:auto; }
+  table { border-collapse:collapse; font-size:13px; font-variant-numeric:tabular-nums; margin-top:8px; }
+  th, td { padding:4px 10px; border-bottom:1px solid var(--grid); text-align:right; }
+  th:first-child, td:first-child { text-align:left; }
+  ul { margin:0 0 12px; padding-left:20px; }
+  li { margin-bottom:6px; }
+  .muted { color:var(--ink-2); font-size:14px; }
+  a { color:var(--accent); }
+  .err { color:#d03b3b; }
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">Pop Quiz · Evidence</p>
+  <h1>Georgia nursing homes staff up while inspectors are in the building</h1>
+  <p class="lede" id="lede">Loading the statewide numbers…</p>
+
+  <div class="tiles" id="tiles"></div>
+
+  <section class="panel">
+    <h2>Staffing around real inspections vs random dates</h2>
+    <p class="muted">Average nurse hours per resident day across Georgia homes, relative to each home's own normal
+      (day-of-week, trend and month removed), by day relative to the inspection's last day (day 0). Both charts share one scale.</p>
+    <div class="charts">
+      <div class="chart" id="c-real"><h3>Real inspection dates</h3><p class="sub" id="s-real"></p><div class="tip"></div></div>
+      <div class="chart" id="c-fake"><h3>Placebo: random fake dates</h3><p class="sub" id="s-fake"></p><div class="tip"></div></div>
+    </div>
+    <div class="legend"><span class="on">Last 4 days before the end date (inspectors typically on site)</span><span class="base">Baseline, a month later</span></div>
+    <details>
+      <summary>Show the data as a table</summary>
+      <div class="tablewrap"><table id="table"></table></div>
+    </details>
+  </section>
+
+  <section class="panel">
+    <h2>What this does and doesn't show</h2>
+    <ul id="claims"></ul>
+  </section>
+
+  <section class="panel">
+    <h2>Method</h2>
+    <ul>
+      <li><strong>Data:</strong> CMS Payroll-Based Journal daily nurse staffing (RN + LPN + CNA hours ÷ census) and CMS
+        Health Standard inspection dates, Georgia only. <span id="sample"></span></li>
+      <li><strong>Day 0 is the inspection's last day.</strong> CMS records the survey end date; start dates aren't reliable.
+        We follow Chen &amp; Dillender and anchor on the end date, so the spike before day 0 includes the days inspectors are on site.</li>
+      <li><strong>Residuals:</strong> each home's day-of-week pattern, 90-day trend and monthly level are removed first, so
+        weekends and seasons don't read as inspection effects.</li>
+      <li><strong>Per-home scores</strong> compare days −14 to −1 with days +28 to +56, are shrunk toward the state average
+        when a home has few or noisy inspections, and always show an uncertainty range. <span id="scoresline"></span></li>
+      <li><strong>Placebo:</strong> the same analysis on random fake dates for each home. A real effect should vanish.</li>
+    </ul>
+    <p class="muted"><strong>Limits.</strong> PBJ staffing is self-reported by facilities (OIG found about 5% of RN hours
+      unsupported). Most homes have only one or two inspections inside the staffing data, so per-home scores are uncertain.
+      The on-site window assumes a typical 4-day survey; actual survey length varies.</p>
+    <p class="muted">Credits: Chen &amp; Dillender (NBER w34037); Gandhi, Olenski &amp; Shi (NBER w34491).</p>
+  </section>
+</main>
+
+<script>
+const fmt = (v, d = 1) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
+const day = (d) => (d < 0 ? "−" + Math.abs(d) : String(d));
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function tile(num, label) {
+  return `<div class="tile"><div class="num">${esc(num)}</div><div class="lbl">${esc(label)}</div></div>`;
+}
+
+function drawChart(el, curve, ev, yMin, yMax) {
+  const W = 440, H = 240, m = { l: 44, r: 10, t: 10, b: 30 };
+  const xs = curve.map((p) => p.d), x0 = Math.min(...xs), x1 = Math.max(...xs);
+  const X = (d) => m.l + ((d - x0) / (x1 - x0)) * (W - m.l - m.r);
+  const Y = (v) => m.t + ((yMax - v) / (yMax - yMin)) * (H - m.t - m.b);
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.setAttribute("role", "img");
+  const [os0, os1] = ev.windows.on_site, [b0, b1] = ev.windows.baseline;
+  let g = "";
+  // windows: on-site band and baseline band
+  g += `<rect x="${X(os0 - 0.5)}" y="${m.t}" width="${X(os1 + 0.5) - X(os0 - 0.5)}" height="${H - m.t - m.b}" fill="var(--band)"/>`;
+  g += `<rect x="${X(b0)}" y="${m.t}" width="${X(b1) - X(b0)}" height="${H - m.t - m.b}" fill="var(--band-2)"/>`;
+  // y grid + labels
+  const step = 0.1;
+  for (let v = Math.ceil(yMin / step) * step; v <= yMax + 1e-9; v += step) {
+    const y = Y(v), zero = Math.abs(v) < 1e-9;
+    g += `<line x1="${m.l}" x2="${W - m.r}" y1="${y}" y2="${y}" stroke="${zero ? "var(--axis)" : "var(--grid)"}" stroke-width="1"/>`;
+    g += `<text x="${m.l - 6}" y="${y + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${v.toFixed(1)}</text>`;
+  }
+  // x ticks
+  for (const d of [-42, -28, -14, 0, 14, 28, 42, 56]) {
+    if (d < x0 || d > x1) continue;
+    g += `<text x="${X(d)}" y="${H - 10}" text-anchor="middle" font-size="11" fill="var(--muted)">${d}</text>`;
+  }
+  g += `<line x1="${X(0)}" x2="${X(0)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--axis)" stroke-dasharray="3 3"/>`;
+  g += `<text x="${X(0) + 4}" y="${m.t + 12}" font-size="11" fill="var(--muted)">day 0 (end)</text>`;
+  const path = curve.map((p, i) => `${i ? "L" : "M"}${X(p.d).toFixed(1)},${Y(p.v).toFixed(1)}`).join("");
+  g += `<path d="${path}" fill="none" stroke="var(--series)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  g += `<line class="xh" y1="${m.t}" y2="${H - m.b}" stroke="var(--ink-2)" stroke-width="1" visibility="hidden"/>`;
+  g += `<circle class="dot" r="4.5" fill="var(--series)" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>`;
+  g += `<rect class="hit" x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent"/>`;
+  svg.innerHTML = g;
+  svg.setAttribute("aria-label", el.querySelector("h3").textContent + ": staffing residual by day relative to the inspection's last day");
+  el.insertBefore(svg, el.querySelector(".tip"));
+
+  const tip = el.querySelector(".tip"), xh = svg.querySelector(".xh"), dot = svg.querySelector(".dot");
+  const hide = () => { tip.style.display = "none"; xh.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden"); };
+  svg.querySelector(".hit").addEventListener("pointermove", (e) => {
+    const r = svg.getBoundingClientRect(), sx = ((e.clientX - r.left) / r.width) * W;
+    const d = Math.round(x0 + ((sx - m.l) / (W - m.l - m.r)) * (x1 - x0));
+    const p = curve.reduce((a, b) => (Math.abs(b.d - d) < Math.abs(a.d - d) ? b : a));
+    xh.setAttribute("x1", X(p.d)); xh.setAttribute("x2", X(p.d)); xh.setAttribute("visibility", "visible");
+    dot.setAttribute("cx", X(p.d)); dot.setAttribute("cy", Y(p.v)); dot.setAttribute("visibility", "visible");
+    tip.innerHTML = `Day ${p.d}: <strong>${fmt(p.v, 3)}</strong> hrs/resident · ${p.n} inspections`;
+    tip.style.display = "block";
+    const px = (X(p.d) / W) * r.width, left = Math.min(Math.max(px - tip.offsetWidth / 2, 0), r.width - tip.offsetWidth);
+    tip.style.left = left + "px";
+    tip.style.top = (svg.offsetTop + (Y(p.v) / H) * r.height - tip.offsetHeight - 12) + "px";
+  });
+  svg.querySelector(".hit").addEventListener("pointerleave", hide);
+}
+
+async function main() {
+  let ev;
+  try {
+    const r = await fetch("/api/evidence");
+    ev = await r.json();
+    if (!r.ok) throw new Error(ev.detail || r.statusText);
+  } catch (e) {
+    document.getElementById("lede").innerHTML = `<span class="err">Couldn't load the evidence: ${esc(e.message)}</span>`;
+    return;
+  }
+  const R = ev.real, P = ev.placebo, S = ev.sample;
+  document.getElementById("lede").textContent =
+    `Across ${S.inspections} Georgia inspections, nurse staffing rises in the last days before an inspection ends and falls back ` +
+    `the next day. Before inspectors typically arrive, staffing is at its normal level. On random dates, nothing happens.`;
+  document.getElementById("tiles").innerHTML =
+    tile(`${fmt(R.on_site_pct)}%`, `nurse hours per resident in the last 4 days before an inspection ends, vs a month later`) +
+    tile(`${fmt(R.peak_pct)}%`, `on the busiest day (day ${day(R.peak_day)}), then back to normal the day after`) +
+    tile(`${fmt(P.on_site_pct)}%`, `the same window on random fake dates (placebo)`);
+  document.getElementById("s-real").textContent = `Peak ${fmt(R.peak, 2)} hrs/resident on day ${day(R.peak_day)}; ${fmt(R.pre_arrival_pct)}% in days −14 to −5`;
+  document.getElementById("s-fake").textContent = `Largest wiggle ${fmt(P.peak, 2)} hrs/resident: noise`;
+
+  const all = [...ev.state_curve, ...ev.placebo_curve].map((p) => p.v);
+  const yMin = Math.floor(Math.min(...all) * 10) / 10, yMax = Math.ceil(Math.max(...all) * 10) / 10;
+  drawChart(document.getElementById("c-real"), ev.state_curve, ev, yMin, yMax);
+  drawChart(document.getElementById("c-fake"), ev.placebo_curve, ev, yMin, yMax);
+
+  const fake = Object.fromEntries(ev.placebo_curve.map((p) => [p.d, p.v]));
+  document.getElementById("table").innerHTML =
+    `<tr><th>Day</th><th>Real dates</th><th>Inspections</th><th>Random dates</th></tr>` +
+    ev.state_curve.map((p) => `<tr><td>${p.d}</td><td>${fmt(p.v, 3)}</td><td>${p.n}</td><td>${p.d in fake ? fmt(fake[p.d], 3) : "–"}</td></tr>`).join("");
+
+  const L = ev.scores.labels;
+  document.getElementById("claims").innerHTML = [
+    `<strong>Shows:</strong> staffing is about ${fmt(R.on_site_pct)}% higher while inspectors are typically on site, peaking at ${fmt(R.peak_pct)}% on day ${day(R.peak_day)}, and returns to normal the day after the inspection ends. So inspectors see staffing that isn't typical.`,
+    `<strong>Shows:</strong> the random-date placebo moves only ${fmt(P.on_site_pct)}%, so the spike is tied to real inspections, not to the method.`,
+    `<strong>Doesn't show:</strong> much staffing up in advance. In days −14 to −5 staffing is ${fmt(R.pre_arrival_pct)}% vs normal. The effect is during inspections, not ahead of them.`,
+    `<strong>Also:</strong> the typical home has ${ev.scores.median_weekend_dip_pct}% fewer nurse hours per resident on weekends than on weekdays.`,
+    `<strong>Per home:</strong> ${ev.scores.scored} homes scored (${["Low", "Watch", "High"].filter((k) => L[k]).map((k) => `${L[k]} ${k}`).join(", ")} consistency); ${ev.scores.trophy} flagged by Trophy Check.`,
+  ].map((t) => `<li>${t}</li>`).join("");
+  document.getElementById("sample").textContent =
+    `${S.facilities} homes, ${S.facility_days.toLocaleString()} facility-days, ${S.pbj_from} to ${S.pbj_to}; ${S.inspections} inspections fall inside that window.`;
+  document.getElementById("scoresline").textContent =
+    `Mean staffing across Georgia is ${ev.mean_hprd} nurse hours per resident day; percentages above are relative to it.`;
+}
+main();
+</script>
+</body>
+</html>
