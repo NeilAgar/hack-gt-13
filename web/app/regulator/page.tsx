@@ -1,3 +1,4 @@
+import { DEFAULT_CAPACITY } from "@/lib/regulator";
 import { PredictabilityPanel } from "@/components/PredictabilityPanel";
 import { SchedulePanel } from "@/components/SchedulePanel";
 import { SimulationChart } from "@/components/SimulationChart";
@@ -21,7 +22,7 @@ export default async function RegulatorPage() {
   const [trophy, facilities, simulation, predictability] = await Promise.all([
     getTrophy(),
     getFacilities("", 400),
-    getSimulate(3),
+    getSimulate(DEFAULT_CAPACITY),
     getPredictability(),
   ]);
   const byCcn = new Map(facilities.map((facility) => [facility.ccn, facility]));

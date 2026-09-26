@@ -1,5 +1,6 @@
 "use client";
 
+import { DEFAULT_CAPACITY } from "@/lib/regulator";
 import { useState, type FormEvent } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
@@ -15,7 +16,7 @@ export function SimulationChart({
   initialSimulation: SimulateResponse;
   loadSimulation: (capacity: number) => Promise<SimulateResponse>;
 }) {
-  const [capacity, setCapacity] = useState(3);
+  const [capacity, setCapacity] = useState(DEFAULT_CAPACITY);
   const [simulation, setSimulation] = useState(initialSimulation);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);

@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 
 import { currentMonth, formatProbability } from "@/lib/format";
-import { visibleProbabilities } from "@/lib/regulator";
+import { DEFAULT_CAPACITY, visibleProbabilities } from "@/lib/regulator";
 import type { ScheduleRequest, ScheduleResponse } from "@/lib/types";
 
 const CAPACITY_MAX = 40;
@@ -14,7 +14,7 @@ export function SchedulePanel({
   generateSchedule: (body: ScheduleRequest) => Promise<ScheduleResponse>;
 }) {
   const [month, setMonth] = useState(currentMonth);
-  const [capacity, setCapacity] = useState(3);
+  const [capacity, setCapacity] = useState(DEFAULT_CAPACITY);
   const [result, setResult] = useState<ScheduleResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
