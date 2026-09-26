@@ -1,0 +1,402 @@
+[
+  {
+    "ccn": "115999",
+    "name": "Sample Harbor Health & Rehab",
+    "p_next_60d": 0.608872
+  },
+  {
+    "ccn": "110031",
+    "name": "Sample GA Home 110031",
+    "p_next_60d": 0.551933
+  },
+  {
+    "ccn": "110005",
+    "name": "Sample GA Home 110005",
+    "p_next_60d": 0.526432
+  },
+  {
+    "ccn": "110022",
+    "name": "Sample GA Home 110022",
+    "p_next_60d": 0.526432
+  },
+  {
+    "ccn": "110000",
+    "name": "Sample GA Home 110000",
+    "p_next_60d": 0.524387
+  },
+  {
+    "ccn": "110008",
+    "name": "Sample GA Home 110008",
+    "p_next_60d": 0.524387
+  },
+  {
+    "ccn": "110009",
+    "name": "Sample GA Home 110009",
+    "p_next_60d": 0.524387
+  },
+  {
+    "ccn": "110019",
+    "name": "Sample GA Home 110019",
+    "p_next_60d": 0.524387
+  },
+  {
+    "ccn": "110039",
+    "name": "Sample GA Home 110039",
+    "p_next_60d": 0.524387
+  },
+  {
+    "ccn": "110043",
+    "name": "Sample GA Home 110043",
+    "p_next_60d": 0.524387
+  },
+  {
+    "ccn": "110050",
+    "name": "Sample GA Home 110050",
+    "p_next_60d": 0.524387
+  },
+  {
+    "ccn": "110052",
+    "name": "Sample GA Home 110052",
+    "p_next_60d": 0.524387
+  },
+  {
+    "ccn": "110060",
+    "name": "Sample GA Home 110060",
+    "p_next_60d": 0.524387
+  },
+  {
+    "ccn": "110062",
+    "name": "Sample GA Home 110062",
+    "p_next_60d": 0.524387
+  },
+  {
+    "ccn": "110066",
+    "name": "Sample GA Home 110066",
+    "p_next_60d": 0.524387
+  },
+  {
+    "ccn": "110067",
+    "name": "Sample GA Home 110067",
+    "p_next_60d": 0.524387
+  },
+  {
+    "ccn": "115997",
+    "name": "Sample Pineview Nursing Home",
+    "p_next_60d": 0.524387
+  },
+  {
+    "ccn": "110001",
+    "name": "Sample GA Home 110001",
+    "p_next_60d": 0.517983
+  },
+  {
+    "ccn": "110042",
+    "name": "Sample GA Home 110042",
+    "p_next_60d": 0.517983
+  },
+  {
+    "ccn": "110028",
+    "name": "Sample GA Home 110028",
+    "p_next_60d": 0.511411
+  },
+  {
+    "ccn": "110004",
+    "name": "Sample GA Home 110004",
+    "p_next_60d": 0.503892
+  },
+  {
+    "ccn": "110012",
+    "name": "Sample GA Home 110012",
+    "p_next_60d": 0.503892
+  },
+  {
+    "ccn": "110072",
+    "name": "Sample GA Home 110072",
+    "p_next_60d": 0.503892
+  },
+  {
+    "ccn": "110024",
+    "name": "Sample GA Home 110024",
+    "p_next_60d": 0.500753
+  },
+  {
+    "ccn": "110051",
+    "name": "Sample GA Home 110051",
+    "p_next_60d": 0.500753
+  },
+  {
+    "ccn": "110069",
+    "name": "Sample GA Home 110069",
+    "p_next_60d": 0.486428
+  },
+  {
+    "ccn": "110063",
+    "name": "Sample GA Home 110063",
+    "p_next_60d": 0.469266
+  },
+  {
+    "ccn": "110044",
+    "name": "Sample GA Home 110044",
+    "p_next_60d": 0.46884
+  },
+  {
+    "ccn": "110033",
+    "name": "Sample GA Home 110033",
+    "p_next_60d": 0.452925
+  },
+  {
+    "ccn": "110048",
+    "name": "Sample GA Home 110048",
+    "p_next_60d": 0.448525
+  },
+  {
+    "ccn": "110017",
+    "name": "Sample GA Home 110017",
+    "p_next_60d": 0.442992
+  },
+  {
+    "ccn": "110023",
+    "name": "Sample GA Home 110023",
+    "p_next_60d": 0.442992
+  },
+  {
+    "ccn": "110029",
+    "name": "Sample GA Home 110029",
+    "p_next_60d": 0.442992
+  },
+  {
+    "ccn": "110035",
+    "name": "Sample GA Home 110035",
+    "p_next_60d": 0.442992
+  },
+  {
+    "ccn": "110041",
+    "name": "Sample GA Home 110041",
+    "p_next_60d": 0.442992
+  },
+  {
+    "ccn": "110053",
+    "name": "Sample GA Home 110053",
+    "p_next_60d": 0.442992
+  },
+  {
+    "ccn": "110057",
+    "name": "Sample GA Home 110057",
+    "p_next_60d": 0.442992
+  },
+  {
+    "ccn": "110002",
+    "name": "Sample GA Home 110002",
+    "p_next_60d": 0.433107
+  },
+  {
+    "ccn": "110058",
+    "name": "Sample GA Home 110058",
+    "p_next_60d": 0.426083
+  },
+  {
+    "ccn": "110007",
+    "name": "Sample GA Home 110007",
+    "p_next_60d": 0.419479
+  },
+  {
+    "ccn": "110018",
+    "name": "Sample GA Home 110018",
+    "p_next_60d": 0.419479
+  },
+  {
+    "ccn": "110037",
+    "name": "Sample GA Home 110037",
+    "p_next_60d": 0.419479
+  },
+  {
+    "ccn": "110049",
+    "name": "Sample GA Home 110049",
+    "p_next_60d": 0.419479
+  },
+  {
+    "ccn": "110064",
+    "name": "Sample GA Home 110064",
+    "p_next_60d": 0.419479
+  },
+  {
+    "ccn": "110016",
+    "name": "Sample GA Home 110016",
+    "p_next_60d": 0.40477
+  },
+  {
+    "ccn": "110070",
+    "name": "Sample GA Home 110070",
+    "p_next_60d": 0.40477
+  },
+  {
+    "ccn": "110045",
+    "name": "Sample GA Home 110045",
+    "p_next_60d": 0.399919
+  },
+  {
+    "ccn": "110071",
+    "name": "Sample GA Home 110071",
+    "p_next_60d": 0.399919
+  },
+  {
+    "ccn": "110047",
+    "name": "Sample GA Home 110047",
+    "p_next_60d": 0.383524
+  },
+  {
+    "ccn": "110056",
+    "name": "Sample GA Home 110056",
+    "p_next_60d": 0.383524
+  },
+  {
+    "ccn": "110038",
+    "name": "Sample GA Home 110038",
+    "p_next_60d": 0.381484
+  },
+  {
+    "ccn": "110055",
+    "name": "Sample GA Home 110055",
+    "p_next_60d": 0.381484
+  },
+  {
+    "ccn": "110073",
+    "name": "Sample GA Home 110073",
+    "p_next_60d": 0.381484
+  },
+  {
+    "ccn": "110011",
+    "name": "Sample GA Home 110011",
+    "p_next_60d": 0.366227
+  },
+  {
+    "ccn": "110021",
+    "name": "Sample GA Home 110021",
+    "p_next_60d": 0.366227
+  },
+  {
+    "ccn": "110059",
+    "name": "Sample GA Home 110059",
+    "p_next_60d": 0.366227
+  },
+  {
+    "ccn": "115996",
+    "name": "Sample Riverbend Senior Living",
+    "p_next_60d": 0.366227
+  },
+  {
+    "ccn": "110015",
+    "name": "Sample GA Home 110015",
+    "p_next_60d": 0.342397
+  },
+  {
+    "ccn": "110025",
+    "name": "Sample GA Home 110025",
+    "p_next_60d": 0.342397
+  },
+  {
+    "ccn": "110032",
+    "name": "Sample GA Home 110032",
+    "p_next_60d": 0.328134
+  },
+  {
+    "ccn": "110040",
+    "name": "Sample GA Home 110040",
+    "p_next_60d": 0.328134
+  },
+  {
+    "ccn": "110054",
+    "name": "Sample GA Home 110054",
+    "p_next_60d": 0.328134
+  },
+  {
+    "ccn": "110010",
+    "name": "Sample GA Home 110010",
+    "p_next_60d": 0.311717
+  },
+  {
+    "ccn": "110020",
+    "name": "Sample GA Home 110020",
+    "p_next_60d": 0.311717
+  },
+  {
+    "ccn": "110036",
+    "name": "Sample GA Home 110036",
+    "p_next_60d": 0.289017
+  },
+  {
+    "ccn": "110061",
+    "name": "Sample GA Home 110061",
+    "p_next_60d": 0.289017
+  },
+  {
+    "ccn": "110013",
+    "name": "Sample GA Home 110013",
+    "p_next_60d": 0.195754
+  },
+  {
+    "ccn": "110027",
+    "name": "Sample GA Home 110027",
+    "p_next_60d": 0.195754
+  },
+  {
+    "ccn": "110003",
+    "name": "Sample GA Home 110003",
+    "p_next_60d": 0.135912
+  },
+  {
+    "ccn": "110046",
+    "name": "Sample GA Home 110046",
+    "p_next_60d": 0.135912
+  },
+  {
+    "ccn": "110026",
+    "name": "Sample GA Home 110026",
+    "p_next_60d": 0.05811
+  },
+  {
+    "ccn": "110014",
+    "name": "Sample GA Home 110014",
+    "p_next_60d": 0.035439
+  },
+  {
+    "ccn": "110030",
+    "name": "Sample GA Home 110030",
+    "p_next_60d": 0.035439
+  },
+  {
+    "ccn": "115994",
+    "name": "Sample Coastal Plains Care",
+    "p_next_60d": 0.035439
+  },
+  {
+    "ccn": "110068",
+    "name": "Sample GA Home 110068",
+    "p_next_60d": 0.032157
+  },
+  {
+    "ccn": "110006",
+    "name": "Sample GA Home 110006",
+    "p_next_60d": 0.025371
+  },
+  {
+    "ccn": "110065",
+    "name": "Sample GA Home 110065",
+    "p_next_60d": 0.023414
+  },
+  {
+    "ccn": "110034",
+    "name": "Sample GA Home 110034",
+    "p_next_60d": 0.022633
+  },
+  {
+    "ccn": "115998",
+    "name": "Sample Oak Ridge Care Center",
+    "p_next_60d": 0.016974
+  },
+  {
+    "ccn": "115995",
+    "name": "Sample Magnolia Gardens Rehab",
+    "p_next_60d": 0.012975
+  }
+]
