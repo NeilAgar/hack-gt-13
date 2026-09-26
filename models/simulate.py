@@ -7,7 +7,7 @@ import pandas as pd
 
 from models.config import AS_OF_DATE, DEFAULT_MONTH, FORCED_WEEKS, SIM_MONTHS, WEEKS_PER_MONTH
 from models.hazard import current_lags
-from models.scheduler import build_schedule, default_capacity, risk_weights
+from models.scheduler import build_schedule, default_capacity, risk_weights, sample_selected
 
 
 def add_month(month: str, steps: int) -> str:
@@ -56,7 +56,6 @@ def simulate(
     as_of: str = AS_OF_DATE,
 ) -> dict:
     """Resident-weighted undetected shirk-months; same inspector budget both arms."""
-    rng = np.random.default_rng(seed)
     fac = facilities.copy()
     fac["ccn"] = fac["ccn"].astype(str).str.zfill(6)
     ccns = list(fac["ccn"])
@@ -91,19 +90,21 @@ def simulate(
             )
             if arm == "popquiz":
                 plan = build_schedule(fac, scores, lag_df, month=ym, capacity=k, seed=seed + t)
-                pmap = {row["ccn"]: float(row["prob"]) for row in plan["probs"]}
-                belief = np.array([pmap[c] for c in ccns])
-                actual = belief
+                selected = {row["ccn"] for row in plan["selected"]}
+                actual = np.array([1.0 if c in selected else 0.0 for c in ccns])
             else:
-                belief = np.array([_status_quo_belief(int(max(wi, 0))) for wi in w])
-                actual = np.array([_status_quo_actual(int(max(wi, 0))) for wi in w])
+                weights = np.array([_status_quo_actual(int(max(wi, 0))) for wi in w])
+                forced = w >= FORCED_WEEKS
+                banned = (lm == month_n) & (~forced)
+                idx = sample_selected(ccns, weights, forced, banned, k, seed + t)
+                actual = np.zeros(n, dtype=float)
+                actual[idx] = 1.0
 
-            p_hat = np.clip(belief, 0.0, 1.0)
-            p_act = np.clip(actual, 0.0, 1.0)
-            shirk = np.array([_shirk_intensity(pi) for pi in p_hat])
-            missed_shirk = shirk * (1.0 - p_act)
+            # Short-run: homes still staff to the historical window; only the inspect process changes.
+            shirk = np.array([_shirk_intensity(_status_quo_belief(int(max(wi, 0)))) for wi in w])
+            missed_shirk = shirk * (1.0 - actual)
             undetected += float((residents * (risk / (risk.mean() + 1e-9)) * missed_shirk).sum())
-            inspected = rng.random(n) < p_act
+            inspected = actual > 0.5
 
             w = w + WEEKS_PER_MONTH
             w[inspected] = 0.0
@@ -121,7 +122,9 @@ def simulate(
         "popquiz": {"undetected_shirk_resident_months": round(pq, 1)},
         "reduction_pct": round(reduction, 1),
         "note": (
-            "Illustrative model. External benchmark: Chen & Dillender (NBER w34037); "
+            "Illustrative model. Homes still staff to the historical 40-60 week window; "
+            "only the inspection process changes (status quo bunches there, Pop Quiz samples "
+            "K risk-weighted slots). Chen & Dillender (NBER w34037); "
             "Gandhi, Olenski & Shi (NBER w34491). Does not estimate lives saved."
         ),
     }

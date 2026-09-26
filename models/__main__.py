@@ -6,10 +6,10 @@ import argparse
 import json
 from pathlib import Path
 
-from models.config import DEFAULT_MONTH, PROCESSED_DIR
+from models.config import DEFAULT_MONTH, PROCESSED_DIR, SYNTHETIC_N_HOMES
 from models.hazard import bunching_share, hazard_table
 from models.load import load_inputs
-from models.scheduler import build_schedule, default_capacity
+from models.scheduler import build_schedule, default_capacity_from_surveys
 from models.simulate import simulate
 
 
@@ -18,16 +18,17 @@ def run(
     month: str = DEFAULT_MONTH,
     capacity: int | None = None,
     seed: int = 0,
+    n_synthetic: int = SYNTHETIC_N_HOMES,
 ) -> dict:
     processed_dir = processed_dir or PROCESSED_DIR
     processed_dir.mkdir(parents=True, exist_ok=True)
-    data = load_inputs(processed_dir)
+    data = load_inputs(processed_dir, n_synthetic=n_synthetic)
     fac, surveys, scores = data["facilities"], data["surveys"], data["scores"]
 
     table, h, lags = hazard_table(surveys, fac)
     table.to_parquet(processed_dir / "hazard.parquet", index=False)
 
-    k = capacity if capacity is not None else default_capacity(len(fac))
+    k = capacity if capacity is not None else default_capacity_from_surveys(len(fac), surveys)
     plan = build_schedule(fac, scores, lags, month=month, capacity=k, seed=seed)
     (processed_dir / "schedule.json").write_text(json.dumps(plan, indent=2), encoding="utf-8")
 
@@ -51,7 +52,9 @@ def run(
             }
         )
     pred.sort(key=lambda r: (-r["p_next_60d"], r["ccn"]))
-    (processed_dir / "predictability.json").write_text(json.dumps(pred, indent=2), encoding="utf-8")
+    (processed_dir / "predictability.json").write_text(
+        json.dumps(pred, indent=2) + "\n", encoding="utf-8"
+    )
 
     bunch = bunching_share(surveys)
     summary = {
@@ -86,9 +89,16 @@ def main() -> None:
     p.add_argument("--month", default=DEFAULT_MONTH, help="YYYY-MM schedule month")
     p.add_argument("--capacity", type=int, default=None, help="inspector slots this month")
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--homes", type=int, default=SYNTHETIC_N_HOMES, help="synthetic N if parquet is missing")
     p.add_argument("--out", type=Path, default=PROCESSED_DIR)
     args = p.parse_args()
-    run(processed_dir=args.out, month=args.month, capacity=args.capacity, seed=args.seed)
+    run(
+        processed_dir=args.out,
+        month=args.month,
+        capacity=args.capacity,
+        seed=args.seed,
+        n_synthetic=args.homes,
+    )
 
 
 if __name__ == "__main__":

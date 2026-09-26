@@ -22,7 +22,7 @@ def _person_weeks(surveys: pd.DataFrame, as_of: date, max_week: int = HAZARD_MAX
     df = df.sort_values(["ccn", "survey_date"])
     rows: list[dict] = []
     as_of_ts = pd.Timestamp(as_of)
-    for ccn, g in df.groupby("ccn", sort=False):
+    for ccn, g in df.groupby("ccn", sort=True):
         dates = list(g["survey_date"].sort_values())
         for i, end in enumerate(dates):
             start = dates[i - 1] if i else None
@@ -80,6 +80,8 @@ def fit_hazard(
     """Return h[w] for w=0..max_week and the fitted logit (or None if fallback)."""
     as_of_d = date.fromisoformat(as_of) if isinstance(as_of, str) else as_of
     pw = _person_weeks(surveys, as_of_d, max_week=max_week)
+    if not pw.empty:
+        pw = pw.sort_values(["ccn", "weeks_since_last", "event", "month"]).reset_index(drop=True)
     emp = np.zeros(max_week + 1, dtype=float)
     if pw.empty:
         emp[40:61] = 0.08
@@ -109,7 +111,7 @@ def fit_hazard(
         x = _design(pw["weeks_since_last"].to_numpy(), pw["month"].to_numpy())
         y = pw["event"].to_numpy()
         if y.sum() >= 8 and y.sum() < len(y):
-            model = LogisticRegression(max_iter=400, C=1.0)
+            model = LogisticRegression(max_iter=400, C=1.0, solver="lbfgs", random_state=0)
             model.fit(x, y)
             grid_w = np.arange(0, max_week + 1)
             grid_m = np.full_like(grid_w, as_of_d.month, dtype=float)
@@ -163,8 +165,8 @@ def hazard_table(
                 {
                     "ccn": ccn,
                     "weeks_since_last": int(w),
-                    "p_survey_week": float(h[w]),
-                    "p_next_60d": cumulative_p(h, w),
+                    "p_survey_week": round(float(h[w]), 8),
+                    "p_next_60d": round(cumulative_p(h, w), 8),
                 }
             )
     table = pd.DataFrame(rows)
