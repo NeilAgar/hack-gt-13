@@ -302,3 +302,16 @@ def test_real_processed_data_smoke(monkeypatch):
     assert all(r["label"] in {"High", "Watch", "Low", None} for r in rows)
     fac = client.get(f"/api/facility/{rows[0]['ccn']}").json()
     assert fac["state_curve"]
+
+
+WINDOW = "in the 14 days through the day before past inspections ended"
+
+
+def test_window_wording_matches_web_and_never_says_before_inspections():
+    from api import voice
+    for text in (explain_mod.template(FAC), explain_mod.SYSTEM_PROMPT, voice.INSTRUCTIONS):
+        assert WINDOW in " ".join(text.split())
+        assert "weeks before past inspections" not in text
+    # A faithful Grok reply that quotes the window keeps its "14".
+    reply = f"Sample Harbor: nurse hours per resident {WINDOW} were 10.8% higher (range 4.9% to 16.2%)."
+    assert explain_mod.passes_guardrails(reply, explain_mod.facts_for(FAC))
