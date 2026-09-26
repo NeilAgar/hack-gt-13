@@ -149,7 +149,30 @@ DAILY_STAFFING_COLS = [
     "hprd_resid",
 ]
 SURVEYS_COLS = ["ccn", "survey_date", "survey_type", "source"]
+SCORES_COLS = [
+    "ccn",
+    "n_surveys",
+    "raw_pct",
+    "score_pct",
+    "ci_low",
+    "ci_high",
+    "surge_pct",
+    "weekend_dip_pct",
+    "label",
+    "trophy_flag",
+]
 CURVES_COLS = ["ccn", "rel_day", "hprd_resid_mean", "n_obs"]
+
+# Chen & Dillender (NBER w34037): day 0 is inspection END. Do not shift to start.
+# CONTRACTS windows, applied on that exit-day calendar.
+PRE_RAMP = (-14, -1)
+SURGE = (0, 3)
+BASELINE = (28, 56)
+CURVE_WINDOW = (-42, 56)
+OVERLAP_DAYS = 150
+LABEL_PLACEHOLDER = "PLACEHOLDER"
+BOOTSTRAP_REPS = 500
+BOOTSTRAP_SEED = 34037
 
 
 def pad_ccn(value: object) -> str:
