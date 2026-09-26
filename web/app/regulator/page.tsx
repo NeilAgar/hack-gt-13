@@ -1,5 +1,6 @@
 import { DEFAULT_CAPACITY, overdueCount } from "@/lib/regulator";
 import { PredictabilityPanel } from "@/components/PredictabilityPanel";
+import { RiskPanel } from "@/components/RiskPanel";
 import { SchedulePanel } from "@/components/SchedulePanel";
 import { SimulationChart } from "@/components/SimulationChart";
 import { getFacilities, getPredictability, getSimulate, getTrophy, postSchedule } from "@/lib/api";
@@ -88,6 +89,7 @@ export default async function RegulatorPage() {
         )}
       </section>
 
+      <RiskPanel />
       <SchedulePanel generateSchedule={generateSchedule} minCapacity={minCapacity} overdue={overdue} names={names} />
       <SimulationChart initialSimulation={simulation} loadSimulation={loadSimulation} minCapacity={minCapacity} />
       <PredictabilityPanel rows={predictability} />

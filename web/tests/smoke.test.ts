@@ -28,6 +28,7 @@ import {
   UNSCORED_COPY,
 } from "../lib/format.ts";
 import { clampCapacity, overdueCount, topPredictability, visibleProbabilities } from "../lib/regulator.ts";
+import { riskScore } from "../lib/risk.ts";
 
 const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -324,5 +325,14 @@ describe("family copy", () => {
     assert.match(text, /Illustrative model/);
     assert.match(text, /undetected shirk resident-months/);
     assert.match(text, /never shown to families/);
+  });
+});
+
+describe("risk score", () => {
+  test("matches the scheduler formula", () => {
+    // 100 × (0.25 + 10/10 + 0.2·1 + 0.4·2 + 18/20 + 2·0.1) = 335
+    assert.ok(Math.abs(riskScore({ residents: 100, scorePct: 10, harm: 1, ij: 2, weekendDipPct: -18, agencyShare: 0.1 }) - 335) < 1e-9);
+    // Missing residents default to 80; negative scores count as 0.
+    assert.equal(riskScore({ scorePct: -3 }), 20);
   });
 });
