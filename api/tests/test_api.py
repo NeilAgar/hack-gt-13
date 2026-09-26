@@ -10,6 +10,13 @@ REG = {"X-Demo-Role": "regulator"}
 TIMING_KEYS = {"p_next_60d", "p_survey_week", "weeks_since_last", "next_survey", "predictability"}
 
 
+@pytest.fixture(autouse=True)
+def clear_explain_cache():
+    explain_mod._cache.clear()
+    yield
+    explain_mod._cache.clear()
+
+
 def keys(obj):
     if isinstance(obj, dict):
         return set(obj) | set().union(*(keys(v) for v in obj.values()))
@@ -162,3 +169,49 @@ def test_predictability_comes_from_models_not_file():
         disk = {r["ccn"]: r["p_next_60d"] for r in json.loads(on_disk.read_text())}
         assert set(disk) == {r["ccn"] for r in rows}
         assert all(abs(r["p_next_60d"] - disk[r["ccn"]]) < 1e-2 for r in rows)
+
+
+def _counting_grok(reply, calls):
+    def handler(request):
+        calls.append(request)
+        return httpx.Response(200, json={"choices": [{"message": {"content": reply}}]})
+    return httpx.Client(transport=httpx.MockTransport(handler))
+
+
+def test_explain_caches_grok_reply(monkeypatch):
+    monkeypatch.setenv("XAI_API_KEY", "test")
+    reply = "Sample Harbor showed survey-responsive staffing of 10.8% (range 4.9% to 16.2%)."
+    calls = []
+    grok = _counting_grok(reply, calls)
+    assert explain_mod.explain(FAC, client=grok) == reply
+    assert explain_mod.explain(FAC, client=grok) == reply
+    assert len(calls) == 1 and explain_mod.cached(FAC) == reply
+
+
+def test_explain_timeout_falls_back_and_is_not_cached(monkeypatch):
+    monkeypatch.setenv("XAI_API_KEY", "test")
+
+    def slow(request):
+        raise httpx.ReadTimeout("slow", request=request)
+    grok = httpx.Client(transport=httpx.MockTransport(slow))
+    assert explain_mod.explain(FAC, client=grok) == explain_mod.template(FAC)
+    assert explain_mod.cached(FAC) is None
+
+
+def test_rejected_reply_is_not_cached(monkeypatch):
+    monkeypatch.setenv("XAI_API_KEY", "test")
+    explain_mod.explain(FAC, client=_fake_grok("Staffing was 12% higher."))
+    assert explain_mod.cached(FAC) is None
+
+
+def test_grok_timeout_is_under_web_timeout():
+    assert explain_mod.GROK_TIMEOUT_S < 4  # web/lib/api.ts API_TIMEOUT_MS default
+
+
+def test_facility_includes_cached_explanation(monkeypatch):
+    monkeypatch.setenv("XAI_API_KEY", "test")
+    assert client.get("/api/facility/115999").json()["explanation"] is None
+    reply = "Sample Harbor Health & Rehab showed survey-responsive staffing of 10.8% (range 4.9% to 16.2%)."
+    from api import data
+    explain_mod.explain(data.facility("115999"), client=_fake_grok(reply))
+    assert client.get("/api/facility/115999").json()["explanation"] == reply

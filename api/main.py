@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from api import data
-from api.explain import explain
+from api.explain import cached, explain
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -57,7 +57,8 @@ def facilities(q: str = "", limit: int = Query(50, ge=1, le=500)):
 
 @public.get("/facility/{ccn}")
 def facility(ccn: str):
-    return _get_facility(ccn)
+    fac = _get_facility(ccn)
+    return {**fac, "explanation": fac.get("explanation") or cached(fac)}
 
 
 class ExplainRequest(BaseModel):
