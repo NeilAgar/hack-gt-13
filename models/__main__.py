@@ -6,8 +6,8 @@ import argparse
 import json
 from pathlib import Path
 
-from models.config import DEFAULT_MONTH, PROCESSED_DIR, SYNTHETIC_N_HOMES
-from models.hazard import bunching_share, hazard_table
+from models.config import AS_OF_DATE, DEFAULT_MONTH, FORCED_WEEKS, PROCESSED_DIR, SYNTHETIC_N_HOMES
+from models.hazard import gap_summary, hazard_table
 from models.load import load_inputs
 from models.scheduler import build_schedule, default_capacity_from_surveys
 from models.simulate import simulate
@@ -56,12 +56,17 @@ def run(
         json.dumps(pred, indent=2) + "\n", encoding="utf-8"
     )
 
-    bunch = bunching_share(surveys)
+    gaps = gap_summary(surveys)
+    n_overdue = int((lags["weeks_since_last"] >= FORCED_WEEKS).sum())
     summary = {
         "source": data.get("source"),
+        "as_of": AS_OF_DATE,
         "n_facilities": int(len(fac)),
         "n_surveys": int(len(surveys)),
-        "bunching_40_60": round(bunch, 4),
+        "n_overdue_15_9mo": n_overdue,
+        "gap_n": gaps["n_gaps"],
+        "gap_median_weeks": gaps["median_weeks"],
+        "gap_share_40_60": gaps["share_40_60"],
         "hazard_rows": int(len(table)),
         "month": month,
         "capacity": plan["capacity"],

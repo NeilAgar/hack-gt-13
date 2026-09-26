@@ -40,7 +40,7 @@ def load_fixture_facilities() -> pd.DataFrame:
 
 
 def _draw_lag_weeks(rng: np.random.Generator, size: int) -> np.ndarray:
-    """~74% of intervals land in 40–60 weeks (NBER-style bunching)."""
+    """Synthetic only: ~74% of intervals in 40–60 weeks (NBER national pattern)."""
     u = rng.random(size)
     lags = np.empty(size, dtype=int)
     n74 = u < 0.74
@@ -168,7 +168,8 @@ def build_synthetic(n_homes: int = SYNTHETIC_N_HOMES, seed: int = SYNTHETIC_SEED
                 current_lag = int(FORCED_WEEKS) + int(rng.integers(0, 8))
             elif roll < 0.14:
                 # Same calendar month as as_of (scheduler must ban unless forced).
-                current_lag = 52
+                prior = date(as_of.year - 1, as_of.month, min(as_of.day, 28))
+                current_lag = max(1, int(round((as_of - prior).days / 7.0)))
 
         cursor = as_of - timedelta(weeks=int(current_lag))
         dates = [cursor]
