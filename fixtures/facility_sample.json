@@ -1,0 +1,33 @@
+{
+  "_note": "SYNTHETIC fixture for UI/API development. Not real CMS data.",
+  "ccn": "115999",
+  "name": "Sample Harbor Health & Rehab",
+  "city": "Savannah",
+  "lat": 32.0809,
+  "lon": -81.0912,
+  "overall_star": 5,
+  "staffing_star": 3,
+  "health_star": 5,
+  "n_surveys": 3,
+  "raw_pct": 13.1,
+  "score_pct": 10.8,
+  "ci_low": 4.9,
+  "ci_high": 16.2,
+  "surge_pct": 18.4,
+  "weekend_dip_pct": -9.7,
+  "label": "Low",
+  "trophy_flag": true,
+  "curve": [
+    {"d": -42, "v": 0.01}, {"d": -35, "v": -0.02}, {"d": -28, "v": 0.00},
+    {"d": -21, "v": 0.05}, {"d": -14, "v": 0.18}, {"d": -7, "v": 0.31},
+    {"d": -3, "v": 0.36}, {"d": 0, "v": 0.52}, {"d": 3, "v": 0.44},
+    {"d": 7, "v": 0.06}, {"d": 14, "v": -0.05}, {"d": 28, "v": -0.08},
+    {"d": 42, "v": -0.06}, {"d": 56, "v": -0.04}
+  ],
+  "state_curve": [
+    {"d": -42, "v": 0.0}, {"d": -14, "v": 0.03}, {"d": -7, "v": 0.06},
+    {"d": 0, "v": 0.21}, {"d": 3, "v": 0.15}, {"d": 7, "v": 0.01},
+    {"d": 28, "v": -0.01}, {"d": 56, "v": 0.0}
+  ],
+  "explanation": null
+}
