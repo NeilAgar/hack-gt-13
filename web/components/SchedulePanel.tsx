@@ -12,11 +12,14 @@ export function SchedulePanel({
   generateSchedule,
   minCapacity = 1,
   overdue = 0,
+  names = {},
 }: {
   generateSchedule: (body: ScheduleRequest) => Promise<ScheduleResponse>;
   /** Smallest capacity allowed: the number of legally overdue homes. */
   minCapacity?: number;
   overdue?: number;
+  /** Home name by CCN, for the full probability table. */
+  names?: Record<string, string>;
 }) {
   const min = Math.min(Math.max(1, minCapacity), CAPACITY_MAX);
   const [month, setMonth] = useState(currentMonth);
@@ -135,6 +138,7 @@ export function SchedulePanel({
             <table>
               <thead>
                 <tr>
+                  <th>Home</th>
                   <th>CCN</th>
                   <th>Probability</th>
                   <th>Forced</th>
@@ -143,6 +147,7 @@ export function SchedulePanel({
               <tbody>
                 {visibleProbabilities(result.probs, showAllProbs).map((row) => (
                   <tr key={row.ccn}>
+                    <td className="wrap-name">{names[row.ccn] ?? "—"}</td>
                     <td>{row.ccn}</td>
                     <td>{formatProbability(row.prob)}</td>
                     <td>{row.forced ? "Yes" : "No"}</td>

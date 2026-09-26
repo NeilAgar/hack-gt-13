@@ -26,6 +26,7 @@ export default async function RegulatorPage() {
     getPredictability(),
   ]);
   const byCcn = new Map(facilities.map((facility) => [facility.ccn, facility]));
+  const names = Object.fromEntries(facilities.map((facility) => [facility.ccn, facility.name]));
   // The schedule marks every legally overdue home as forced; that count is the smallest usable capacity.
   let overdue = 0;
   try {
@@ -87,7 +88,7 @@ export default async function RegulatorPage() {
         )}
       </section>
 
-      <SchedulePanel generateSchedule={generateSchedule} minCapacity={minCapacity} overdue={overdue} />
+      <SchedulePanel generateSchedule={generateSchedule} minCapacity={minCapacity} overdue={overdue} names={names} />
       <SimulationChart initialSimulation={simulation} loadSimulation={loadSimulation} minCapacity={minCapacity} />
       <PredictabilityPanel rows={predictability} />
     </>
