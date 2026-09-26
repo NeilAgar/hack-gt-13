@@ -46,6 +46,12 @@ python hardware/sim/seed_synthetic_history.py --ccn 115999 --days 30   # history
 python -m pytest hardware/tests api/tests/test_bedside.py && (cd hardware/firmware && pio test -e native)
 ```
 
+## Arduino Nano instead of an ESP32
+Same events, same bridge and API; no OLED, Wi-Fi or filesystem (the last 57 events live in EEPROM and `dump` still works).
+Flash with `pio run -e nano -t upload` (most clones: `-e nano-oldboot`). Pins: LDR **A0** (5V → LDR → A0 → 10k → GND),
+PIR **D2**, CALL **D4**, CANCEL **D5**, call LED **D6**, RGB **D9/D10/D11**. `status` shows `ram_never_used` (keep it > 150).
+No board at all? `bash hardware/tools/nanosim/run.sh` runs the Nano firmware in a simulator (needs `simavr`).
+
 ## If something's off
 - **No events:** in the monitor, `cal on` shows `state=`; it must go ON when the LED lights. Re-seat the LDR, shade it.
 - **Entries don't register:** wait out the 30 s warm-up; `cal on` shows `entry=1` on motion. Bench fallback: set

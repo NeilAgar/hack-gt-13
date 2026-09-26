@@ -1,13 +1,20 @@
 // Native Unity tests: pio test -e native
 // Covers the pure call state machine, the light classifier, and the event hash chain
 // (including the cross-language test vector shared with hardware/tests/test_eventlog.py).
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unity.h>
 
+#include <string>
+#include <vector>
+
 #include "call_clock.h"
+#include "compact_log.h"
 #include "crypto.h"
 #include "event_log.h"
 #include "light_sensor.h"
+#include "timefmt.h"
 
 void setUp() {}
 void tearDown() {}
@@ -246,6 +253,259 @@ void test_chain_links_and_nulls() {
   TEST_ASSERT_NOT_NULL(strstr(line2, "\"no_entry\":false"));
 }
 
+
+// ───────────── Nano: time formatting without a time library ─────────────
+
+void test_iso_format_matches_python() {
+  // Expected strings from Python: datetime.fromtimestamp(e, timezone(timedelta(seconds=o))).isoformat()
+  char buf[26];
+  cc_format_iso(1790449402UL, -14400, buf);
+  TEST_ASSERT_EQUAL_STRING("2026-09-26T15:03:22-04:00", buf);
+  cc_format_iso(1790449402UL, 0, buf);
+  TEST_ASSERT_EQUAL_STRING("2026-09-26T19:03:22+00:00", buf);
+  cc_format_iso(1709251199UL, -14400, buf);  // leap day
+  TEST_ASSERT_EQUAL_STRING("2024-02-29T19:59:59-04:00", buf);
+  cc_format_iso(4102444799UL, 19800, buf);  // +05:30, year rollover
+  TEST_ASSERT_EQUAL_STRING("2100-01-01T05:29:59+05:30", buf);
+  TEST_ASSERT_EQUAL(15, cc_local_hour(1790449402UL, -14400));
+  TEST_ASSERT_EQUAL(23, cc_local_hour(1790449402UL + 8 * 3600, -14400));
+}
+
+void test_parse_time_command() {
+  uint32_t e = 0;
+  int32_t off = -18000;
+  TEST_ASSERT_TRUE(cc_parse_time_cmd("{\"cmd\": \"time\", \"epoch\": 1790449402, \"tz_offset\": -14400}", &e, &off));
+  TEST_ASSERT_EQUAL_UINT32(1790449402UL, e);
+  TEST_ASSERT_EQUAL(-14400, off);
+  off = -18000;  // old bridge: no tz_offset → keep the default
+  TEST_ASSERT_TRUE(cc_parse_time_cmd("{\"cmd\":\"time\",\"epoch\":4000000000}", &e, &off));
+  TEST_ASSERT_EQUAL_UINT32(4000000000UL, e);  // past 2038: parsed as unsigned
+  TEST_ASSERT_EQUAL(-18000, off);
+  TEST_ASSERT_FALSE(cc_parse_time_cmd("{\"cmd\":\"time\",\"epoch\":12}", &e, &off));
+  TEST_ASSERT_FALSE(cc_parse_time_cmd("{\"cmd\":\"dump\"}", &e, &off));
+}
+
+// ───────────── Nano: compact EEPROM log ─────────────
+
+class RamStorage : public CcStorage {
+ public:
+  explicit RamStorage(uint16_t n) : bytes(n, 0xFF), writes(0) {}  // blank EEPROM reads 0xFF
+  uint8_t read(uint16_t a) override { return bytes.at(a); }
+  void write(uint16_t a, uint8_t v) override {
+    if (bytes.at(a) != v) writes++;
+    bytes.at(a) = v;
+  }
+  uint16_t size() const override { return (uint16_t)bytes.size(); }
+  std::vector<uint8_t> bytes;
+  unsigned writes;
+};
+
+class LinesSink : public CcSink {
+ public:
+  void write(const char* s, size_t n) override { cur.append(s, n); }
+  std::string take() {
+    std::string s = cur;
+    cur.clear();
+    return s;
+  }
+  std::string cur;
+};
+
+static uint8_t vec_key[32];
+
+static CompactEvent cev(EventType t, uint16_t nonce, uint16_t counter, uint32_t ms, int32_t wait_ds, int8_t no_entry,
+                        bool has_time, uint32_t epoch) {
+  CompactEvent e;
+  e.type = t;
+  e.no_entry = no_entry;
+  e.nonce = nonce;
+  e.counter = counter;
+  e.ms = ms;
+  e.wait_ds = wait_ds;
+  e.has_time = has_time;
+  e.epoch = epoch;
+  e.tz_offset_s = -14400;
+  return e;
+}
+
+// Emits n events (call_on / entry / cancel cycles) and returns their lines.
+static std::vector<std::string> emit_calls(CompactLog& log, int n, uint32_t epoch0) {
+  std::vector<std::string> lines;
+  LinesSink sink;
+  for (int i = 0; i < n; i++) {
+    const int call = i / 3 + 1, phase = i % 3;
+    const uint32_t ms = 10000u + (uint32_t)i * 7000u;
+    CompactEvent e = phase == 0   ? cev(EventType::CALL_ON, log.boot_nonce(), call, ms, -1, TRI_NULL, true, epoch0 + i * 7)
+                     : phase == 1 ? cev(EventType::ENTRY, log.boot_nonce(), call, ms, 214, TRI_NULL, true, epoch0 + i * 7)
+                                  : cev(EventType::CANCEL, log.boot_nonce(), call, ms, 214, 0, i % 2, epoch0 + i * 7);
+    log.emit(e, sink);
+    lines.push_back(sink.take());
+  }
+  return lines;
+}
+
+static std::vector<std::string> dump_lines(CompactLog& log) {
+  LinesSink sink;
+  log.dump(sink, "LOG ");
+  std::vector<std::string> out;
+  size_t pos = 0;
+  const std::string& s = sink.cur;
+  while (pos < s.size()) {
+    size_t nl = s.find('\n', pos);
+    std::string line = s.substr(pos, nl - pos);
+    TEST_ASSERT_EQUAL_STRING("LOG ", line.substr(0, 4).c_str());
+    out.push_back(line.substr(4));
+    pos = nl + 1;
+  }
+  return out;
+}
+
+static std::string field(const std::string& line, const char* key) {
+  std::string k = std::string("\"") + key + "\":";
+  size_t p = line.find(k);
+  TEST_ASSERT_TRUE(p != std::string::npos);
+  p += k.size();
+  size_t e = line.find_first_of(",}", p);
+  std::string v = line.substr(p, e - p);
+  if (!v.empty() && v[0] == '"') v = v.substr(1, v.size() - 2);
+  return v;
+}
+
+void test_compact_log_matches_esp32_chain() {
+  // The same event must produce byte-identical lines on the Nano (CompactLog) and the ESP32 (EventChain).
+  cc_from_hex(VEC_KEY_HEX, vec_key, 32);
+  RamStorage st(1024);
+  CompactLog log(st, "cc-01", "115999", vec_key, 32);
+  TEST_ASSERT_FALSE(log.begin());  // blank EEPROM → new log
+  TEST_ASSERT_EQUAL(57, log.capacity());
+  EventChain chain;
+  chain.begin("cc-01", "115999", VEC_KEY_HEX);
+
+  CallEvent ce;
+  memset(&ce, 0, sizeof(ce));
+  ce.type = EventType::ENTRY;
+  snprintf(ce.call_id, sizeof(ce.call_id), "%04x-%04u", (unsigned)log.boot_nonce(), 7u);
+  ce.ms = 1234567;
+  ce.wait_ds = 214;
+  ce.no_entry = TRI_NULL;
+  char esp[CC_LINE_MAX];
+  TEST_ASSERT_TRUE(chain.append(ce, "2026-09-26T15:03:22-04:00", 0, esp, sizeof(esp)) > 0);
+
+  LinesSink sink;
+  log.emit(cev(EventType::ENTRY, log.boot_nonce(), 7, 1234567, 214, TRI_NULL, true, 1790449402UL), sink);
+  TEST_ASSERT_EQUAL_STRING(esp, sink.take().c_str());
+  TEST_ASSERT_EQUAL_STRING(chain.prev_hash(), log.head_hash());
+}
+
+void test_compact_log_dump_reproduces_lines_and_chain() {
+  RamStorage st(1024);
+  CompactLog log(st, "cc-01", "115999", vec_key, 32);
+  log.begin();
+  std::vector<std::string> lines = emit_calls(log, 9, 1790449402UL);
+  std::vector<std::string> dumped = dump_lines(log);
+  TEST_ASSERT_EQUAL(9, (int)dumped.size());
+  for (size_t i = 0; i < lines.size(); i++) TEST_ASSERT_EQUAL_STRING(lines[i].c_str(), dumped[i].c_str());
+  TEST_ASSERT_EQUAL_STRING("1", field(lines[0], "seq").c_str());
+  TEST_ASSERT_EQUAL_STRING(CC_GENESIS_HASH, field(lines[0], "prev_hash").c_str());
+  for (size_t i = 1; i < lines.size(); i++)
+    TEST_ASSERT_EQUAL_STRING(field(lines[i - 1], "hash").c_str(), field(lines[i], "prev_hash").c_str());
+  TEST_ASSERT_EQUAL_STRING("false", field(lines[0], "synthetic").c_str());
+  // Event 2 was made before a time sync (has_time false): ts and night are null.
+  TEST_ASSERT_EQUAL_STRING("null", field(lines[2], "ts").c_str());
+  TEST_ASSERT_EQUAL_STRING("null", field(lines[2], "night").c_str());
+  TEST_ASSERT_EQUAL_STRING("2026-09-26T15:03:22-04:00", field(lines[0], "ts").c_str());
+  TEST_ASSERT_EQUAL_STRING("false", field(lines[0], "night").c_str());
+}
+
+void test_compact_log_survives_reboot() {
+  RamStorage st(1024);
+  std::string head;
+  uint16_t nonce1;
+  {
+    CompactLog log(st, "cc-01", "115999", vec_key, 32);
+    log.begin();
+    nonce1 = log.boot_nonce();
+    emit_calls(log, 5, 1790449402UL);
+    head = log.head_hash();
+  }
+  CompactLog again(st, "cc-01", "115999", vec_key, 32);  // power cycle
+  TEST_ASSERT_TRUE(again.begin());
+  TEST_ASSERT_EQUAL(nonce1 + 1, again.boot_nonce());  // new call_id prefix every boot
+  TEST_ASSERT_EQUAL_UINT32(6, again.next_seq());
+  TEST_ASSERT_EQUAL_STRING(head.c_str(), again.head_hash());
+  LinesSink sink;
+  again.emit(cev(EventType::CALL_ON, again.boot_nonce(), 1, 50, -1, TRI_NULL, false, 0), sink);
+  std::string line = sink.take();
+  TEST_ASSERT_EQUAL_STRING(head.c_str(), field(line, "prev_hash").c_str());
+  TEST_ASSERT_EQUAL_STRING("null", field(line, "ts").c_str());
+  TEST_ASSERT_EQUAL_STRING("null", field(line, "night").c_str());
+}
+
+void test_compact_log_ring_evicts_without_breaking_chain() {
+  RamStorage st(CompactLog::kHeader + 4 * CompactLog::kRecord);  // room for 4 events
+  CompactLog log(st, "cc-01", "115999", vec_key, 32);
+  log.begin();
+  TEST_ASSERT_EQUAL(4, log.capacity());
+  std::vector<std::string> lines = emit_calls(log, 11, 1790449402UL);
+  std::vector<std::string> dumped = dump_lines(log);
+  TEST_ASSERT_EQUAL(4, (int)dumped.size());
+  for (int i = 0; i < 4; i++) TEST_ASSERT_EQUAL_STRING(lines[7 + i].c_str(), dumped[i].c_str());
+  // The oldest kept event still links to the evicted one's hash.
+  TEST_ASSERT_EQUAL_STRING(field(lines[6], "hash").c_str(), field(dumped[0], "prev_hash").c_str());
+  CompactLog again(st, "cc-01", "115999", vec_key, 32);
+  TEST_ASSERT_TRUE(again.begin());
+  TEST_ASSERT_EQUAL_UINT32(12, again.next_seq());
+  TEST_ASSERT_EQUAL_STRING(field(lines[10], "hash").c_str(), again.head_hash());
+  if (const char* path = getenv("CC_NANO_DUMP")) {  // manual cross-check with hardware/tools/verify_log.py
+    FILE* f = fopen(path, "w");
+    for (auto& l : lines) fprintf(f, "%s\n", l.c_str());
+    fclose(f);
+  }
+}
+
+void test_compact_log_clear_factory_and_identity() {
+  RamStorage st(1024);
+  {
+    CompactLog log(st, "cc-01", "115999", vec_key, 32);
+    log.begin();
+    emit_calls(log, 4, 1790449402UL);
+    std::string head = log.head_hash();
+    log.clear();  // local copy gone, chain continues
+    TEST_ASSERT_EQUAL(0, log.count());
+    TEST_ASSERT_EQUAL_UINT32(5, log.next_seq());
+    TEST_ASSERT_EQUAL_STRING(head.c_str(), log.head_hash());
+    TEST_ASSERT_EQUAL(0, (int)dump_lines(log).size());
+    LinesSink sink;
+    log.emit(cev(EventType::CALL_ON, log.boot_nonce(), 9, 1, -1, TRI_NULL, false, 0), sink);
+    TEST_ASSERT_EQUAL_STRING(head.c_str(), field(sink.take(), "prev_hash").c_str());
+    log.factory();
+    TEST_ASSERT_EQUAL_UINT32(1, log.next_seq());
+    TEST_ASSERT_EQUAL_STRING(CC_GENESIS_HASH, log.head_hash());
+  }
+  {
+    CompactLog log(st, "cc-01", "115999", vec_key, 32);
+    log.begin();
+    emit_calls(log, 3, 1790449402UL);
+  }
+  CompactLog other(st, "cc-02", "115999", vec_key, 32);  // different device on the same EEPROM
+  TEST_ASSERT_FALSE(other.begin());
+  TEST_ASSERT_EQUAL(0, other.count());
+  TEST_ASSERT_EQUAL_UINT32(1, other.next_seq());
+}
+
+void test_compact_log_rejects_corrupt_record() {
+  RamStorage st(1024);
+  {
+    CompactLog log(st, "cc-01", "115999", vec_key, 32);
+    log.begin();
+    emit_calls(log, 6, 1790449402UL);
+  }
+  st.bytes[CompactLog::kHeader + 3 * CompactLog::kRecord] = 0xFF;  // 4th record's flags garbled
+  CompactLog again(st, "cc-01", "115999", vec_key, 32);
+  again.begin();
+  TEST_ASSERT_EQUAL(3, again.count());  // keeps what decodes; the server shows the gap
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_call_entry_cancel);
@@ -260,5 +520,13 @@ int main(int, char**) {
   RUN_TEST(test_sha256_known_answer);
   RUN_TEST(test_cross_language_vector);
   RUN_TEST(test_chain_links_and_nulls);
+  RUN_TEST(test_iso_format_matches_python);
+  RUN_TEST(test_parse_time_command);
+  RUN_TEST(test_compact_log_matches_esp32_chain);
+  RUN_TEST(test_compact_log_dump_reproduces_lines_and_chain);
+  RUN_TEST(test_compact_log_survives_reboot);
+  RUN_TEST(test_compact_log_ring_evicts_without_breaking_chain);
+  RUN_TEST(test_compact_log_clear_factory_and_identity);
+  RUN_TEST(test_compact_log_rejects_corrupt_record);
   return UNITY_END();
 }

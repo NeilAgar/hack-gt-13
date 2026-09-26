@@ -46,6 +46,8 @@ def db_path() -> Path:
 def _db():
     path = db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
+    if not path.exists():  # deleted while the API was running (e.g. to reset the demo): recreate the schema
+        _ready.discard(str(path))
     conn = sqlite3.connect(path, timeout=10)
     conn.row_factory = sqlite3.Row
     try:

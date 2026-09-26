@@ -9,6 +9,20 @@
 
 #include <stdint.h>
 
+// ───────────────────────────── Board: Arduino Nano (ATmega328) ─────────
+// The Nano build (envs `nano`, `nano-oldboot`) has 2 KB RAM, 32 KB flash and 1 KB EEPROM, so it drops:
+// Wi-Fi/NTP (the USB bridge is the uplink), timezone rules (the bridge sends a UTC offset), the OLED
+// (the RGB LED + /live cover it) and the flash filesystem (the last ~57 events live in EEPROM in
+// compact form; `dump` rebuilds the exact signed lines). The event format is identical.
+#if defined(ARDUINO_ARCH_AVR)
+#define OLED_ENABLED 0
+#define WIFI_ENABLED 0
+#define LIGHT_DELTA 75       // 10-bit ADC at 5 V: a quarter of the ESP32's 12-bit values
+#define LDR_HYSTERESIS 15
+// Used until the bridge's first time sync (then its tz_offset wins). -14400 = EDT (Georgia in September).
+#define DEFAULT_TZ_OFFSET_S (-4L * 3600L)
+#endif
+
 // ───────────────────────────── Identity ─────────────────────────────
 // Unique per physical device. Must have a matching key in hardware/keys/devices.json on the server.
 #define DEVICE_ID "cc-01"
@@ -50,14 +64,18 @@
 #define LIGHT_SAMPLE_HZ 100        // ADC samples per second
 #define LIGHT_EMA_ALPHA 0.30f      // smoothing of the raw reading (0..1, higher = faster)
 #define LIGHT_BASELINE_ALPHA 0.001f// adaptive "dark" baseline, updated only while OFF (~10 s at 100 Hz)
-#define LIGHT_DELTA 300            // adaptive mode: ON when smoothed > baseline + LIGHT_DELTA
+#ifndef LIGHT_DELTA
+#define LIGHT_DELTA 300            // adaptive mode: ON when smoothed > baseline + LIGHT_DELTA (ESP32 12-bit ADC)
+#endif
 // Fixed-threshold mode (recommended once calibrated): set to the MIDPOINT of the raw OFF and ON
 // readings you see with `cal on`. 0 = use the adaptive baseline + LIGHT_DELTA instead.
 #ifndef LDR_THRESHOLD  // overridable with -DLDR_THRESHOLD=… in platformio.ini build_flags
 #define LDR_THRESHOLD 0
 #endif
 // Hysteresis in raw counts around the threshold. Rule of thumb: 10% of (raw_on - raw_off).
+#ifndef LDR_HYSTERESIS
 #define LDR_HYSTERESIS 60
+#endif
 #define LIGHT_ON_HOLD_MS 300       // light must look ON for this long before we believe it
 #define LIGHT_OFF_HOLD_MS 2000     // and OFF for this long (bridges the gaps of a flashing light)
 #define FLASH_WINDOW_MS 2000       // ≥ FLASH_MIN_TRANSITIONS lit/unlit flips in this window = FLASH
@@ -117,7 +135,26 @@
 #define SERIAL_BAUD 115200
 
 // ───────────────────────────── Pins ─────────────────────────────────
-#if defined(CONFIG_IDF_TARGET_ESP32S3)
+#if defined(ARDUINO_ARCH_AVR)
+// Arduino Nano (ATmega328, 5 V logic). D0/D1 are the USB serial port: leave them free.
+#define PIN_LDR A0             // LDR from 5V to A0, 10k from A0 to GND (10-bit: 0..1023)
+#define PIN_ENTRY 2            // HC-SR501 OUT (sensor on 5V) or LD2410 OUT
+#define PIN_REED 3             // reed switch / button to GND (internal pull-up)
+#define PIN_MOCK_CALL_BTN 4    // mock station CALL button to GND (INPUT_PULLUP)
+#define PIN_MOCK_CANCEL_BTN 5  // mock station CANCEL button to GND (INPUT_PULLUP)
+#define PIN_MOCK_CALL_LED 6    // mock call LED via 220 Ω: this is what the LDR watches
+#define PIN_DOME_LIGHT 7       // optional dome light (MOSFET gate), mirrors the call LED
+#define PIN_RGB_PIXEL 8        // WS2812 data (only if USE_NEOPIXEL)
+#define PIN_RGB_R 9            // RGB red   via 220 Ω
+#define PIN_RGB_G 10           // RGB green via 220 Ω
+#define PIN_RGB_B 11           // RGB blue  via 220 Ω
+#define PIN_BUZZER 12          // active buzzer (+) ; (-) to GND
+#define PIN_I2C_SDA A4         // unused (no OLED on the Nano)
+#define PIN_I2C_SCL A5
+#define PIN_LD2410_RX -1       // LD2410 UART mode is not supported on the Nano (one hardware UART)
+#define PIN_LD2410_TX -1
+#define REED_INTERNAL_PULLUP 1
+#elif defined(CONFIG_IDF_TARGET_ESP32S3)
 // ESP32-S3-DevKitC-1. Avoid 0/3/45/46 (strapping), 19/20 (USB D-/D+), 26–37 (flash/PSRAM on N8R8/N16R8).
 #define PIN_LDR 4              // ADC1_CH3. ADC1 only: ADC2 stops working when Wi-Fi is on
 #define PIN_ENTRY 5            // PIR / LD2410 OUT (3.3 V logic output)
@@ -160,3 +197,15 @@
 #endif
 
 #define LD2410_BAUD 256000
+
+#if defined(ARDUINO_ARCH_AVR)
+#if OLED_ENABLED
+#error "The OLED is not supported on the Nano: its 1 KB frame buffer does not fit in 2 KB of RAM."
+#endif
+#if WIFI_ENABLED
+#error "The Nano has no Wi-Fi: use the USB serial bridge."
+#endif
+#if ENTRY_SENSOR == ENTRY_LD2410_UART
+#error "LD2410 UART mode needs a second UART; on the Nano use ENTRY_LD2410_OUT (digital pin) instead."
+#endif
+#endif

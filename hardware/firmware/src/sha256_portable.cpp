@@ -2,7 +2,15 @@
 
 #include <string.h>
 
-static const uint32_t K[64] = {
+#if defined(__AVR__)
+#include <avr/pgmspace.h>  // keep the 256-byte round-constant table in flash, not in the Nano's 2 KB of RAM
+#define K_AT(i) pgm_read_dword(&K[i])
+#else
+#define PROGMEM
+#define K_AT(i) K[i]
+#endif
+
+static const uint32_t K[64] PROGMEM = {
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
     0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
     0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
@@ -14,24 +22,34 @@ static const uint32_t K[64] = {
 
 static inline uint32_t rotr(uint32_t x, int n) { return (x >> n) | (x << (32 - n)); }
 
-Sha256::Sha256() {
-  static const uint32_t init[8] = {0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
-                                   0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19};
-  memcpy(h_, init, sizeof(h_));
+static const uint32_t H0[8] PROGMEM = {0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+                                      0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19};
+
+Sha256::Sha256() { reset(); }
+
+void Sha256::reset() {
+  buf_len_ = 0;
+  total_ = 0;
+#if defined(__AVR__)
+  for (int i = 0; i < 8; i++) h_[i] = pgm_read_dword(&H0[i]);
+#else
+  memcpy(h_, H0, sizeof(h_));
+#endif
 }
 
 void Sha256::block(const uint8_t* p) {
-  uint32_t w[64];
+  uint32_t w[16];
   for (int i = 0; i < 16; i++)
     w[i] = (uint32_t)p[4 * i] << 24 | (uint32_t)p[4 * i + 1] << 16 | (uint32_t)p[4 * i + 2] << 8 | p[4 * i + 3];
-  for (int i = 16; i < 64; i++) {
-    uint32_t s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >> 3);
-    uint32_t s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >> 10);
-    w[i] = w[i - 16] + s0 + w[i - 7] + s1;
-  }
   uint32_t a = h_[0], b = h_[1], c = h_[2], d = h_[3], e = h_[4], f = h_[5], g = h_[6], h = h_[7];
   for (int i = 0; i < 64; i++) {
-    uint32_t t1 = h + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + w[i];
+    if (i >= 16) {
+      uint32_t w15 = w[(i - 15) & 15], w2 = w[(i - 2) & 15];
+      uint32_t s0 = rotr(w15, 7) ^ rotr(w15, 18) ^ (w15 >> 3);
+      uint32_t s1 = rotr(w2, 17) ^ rotr(w2, 19) ^ (w2 >> 10);
+      w[i & 15] += s0 + w[(i - 7) & 15] + s1;
+    }
+    uint32_t t1 = h + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & f) ^ (~e & g)) + K_AT(i) + w[i & 15];
     uint32_t t2 = (rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c));
     h = g; g = f; f = e; e = d + t1; d = c; c = b; b = a; a = t1 + t2;
   }

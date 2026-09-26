@@ -44,8 +44,12 @@ static void radar_poll() {
 void EntrySensor::begin(uint32_t now_ms) {
   boot_ms_ = now_ms;
 #if ENTRY_SENSOR == ENTRY_PIR || ENTRY_SENSOR == ENTRY_LD2410_OUT
+#if defined(INPUT_PULLDOWN)
   pinMode(PIN_ENTRY, INPUT_PULLDOWN);  // HC-SR501 / LD2410 OUT drive actively; pull-down keeps a
                                        // disconnected pin from floating into phantom entries
+#else
+  pinMode(PIN_ENTRY, INPUT);  // AVR has no internal pull-down; add 100k to GND if the sensor may be unplugged
+#endif
 #elif ENTRY_SENSOR == ENTRY_REED
 #if REED_INTERNAL_PULLUP
   pinMode(PIN_REED, INPUT_PULLUP);
