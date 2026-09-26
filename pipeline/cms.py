@@ -170,9 +170,17 @@ SURGE = (0, 3)
 BASELINE = (28, 56)
 CURVE_WINDOW = (-42, 56)
 OVERLAP_DAYS = 150
-LABEL_PLACEHOLDER = "PLACEHOLDER"
+# Staffing Consistency (public label). Low = significant survey-responsive staffing.
+LABELS = ("High", "Watch", "Low")
+WATCH_CI_HIGH_MIN = 5.0  # if CI includes 0 but upper bound > 5 → Watch
 BOOTSTRAP_REPS = 500
 BOOTSTRAP_SEED = 34037
+# Days −14..−1 on the exit calendar include the inspection; do not say "before".
+HEADLINE_TEMPLATE = (
+    "In the 14 days through the last day of past inspections, nurse hours per "
+    "resident were {abs_pct:.1f}% {direction} than a month later "
+    "(range {ci_low:.1f} to {ci_high:.1f}%, based on {n} inspections)."
+)
 
 
 def pad_ccn(value: object) -> str:
