@@ -7,7 +7,7 @@ import math
 from functools import lru_cache
 from pathlib import Path
 
-from api import adjusted
+from api import adjusted, normal_band
 
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURES = ROOT / "fixtures"
@@ -79,7 +79,14 @@ def _processed():
     if curves is not None:
         curves["ccn"] = curves["ccn"].astype(str)
         state_curve = _curve(curves[curves["ccn"] == "GA"])
-        by_ccn = {c: _curve(g) for c, g in curves[curves["ccn"] != "GA"].groupby("ccn")}
+        homes = curves[curves["ccn"] != "GA"]
+        by_ccn = {c: _curve(g) for c, g in homes.groupby("ccn")}
+        for ccn, (p95, n_days) in normal_band.all_homes(PROCESSED, homes).items():
+            if ccn in details:
+                details[ccn]["normal_p95"], details[ccn]["normal_days"] = p95, n_days
+    for row in details.values():
+        row.setdefault("normal_p95", None)
+        row.setdefault("normal_days", None)
     return {"details": details, "curves": by_ccn, "state_curve": state_curve}
 
 
@@ -100,7 +107,8 @@ def _facility_sample():
 
 
 def _unadjusted(row):
-    return {**row, "adjusted_star": row.get("overall_star"), "adjust_reason": None}
+    return {**row, "adjusted_star": row.get("overall_star"), "adjust_reason": None,
+            "normal_p95": None, "normal_days": None}
 
 
 def facilities():

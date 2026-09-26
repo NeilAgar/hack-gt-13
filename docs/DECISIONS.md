@@ -32,3 +32,21 @@ Code: `api/adjusted.py`. Each rule and its reason:
 
 Result on current data (356 homes): 30 homes meet the rule; 22 go down one star (8 from 2★, 6 from 3★, 4 from 4★,
 4 from 5★); 8 are already at 1★. Every home gets a plain-language `adjust_reason`.
+
+## Normal-day line on the staffing chart (contract v1.2, C)
+
+`normal_p95` gives each facility chart a dotted line: the level this home's staffing stays below on 95% of its
+ordinary days. A spike above it is unusual *for this home*. Code: `api/normal_band.py`.
+
+| Choice | Why |
+|---|---|
+| **The home's own days**, not Georgia's | Homes differ in how much their staffing jumps around; each home is judged against its own normal. |
+| **Ordinary = more than 60 days from any inspection** | The chart spans days −42 to +56, so no day that an inspection could affect counts as ordinary. |
+| **Average of as many random ordinary days as the home has inspections in its curve** | Each point on the home's curve averages that day across its inspections, and an average of 2 days swings less than 1 day. Using single days would set the bar too high for homes with 2+ inspections. |
+| **95th percentile** | Matches the 95% ranges used everywhere else. |
+| **Fixed seed per home; null under 60 ordinary days** | The line never moves between runs, and isn't drawn from too little data. |
+
+Calibration on real data: far from inspections (|day| ≥ 15), home curves sit above their own line 6.1% of the
+time (a true 95th percentile gives 5%). On days −4 to −1, 199 of 350 homes go above their line at least once
+(chance alone ≈ 19% over 4 days). Caveat for the UI: one day above the line is not proof on its own; about 1 day
+in 20 crosses it by chance.
