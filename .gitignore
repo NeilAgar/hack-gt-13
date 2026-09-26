@@ -1,0 +1,23 @@
+# Raw data and secrets never go in git (AGENTS.md rule 3)
+data/raw/
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/
