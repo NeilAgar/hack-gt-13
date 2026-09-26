@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from models.config import PROCESSED_DIR
+from models.config import PROCESSED_DIR, SYNTHETIC_N_HOMES
 from models.synthetic import build_synthetic
 
 
@@ -23,7 +23,7 @@ def _read_parquet(path: Path) -> pd.DataFrame | None:
     return df
 
 
-def load_inputs(processed_dir: Path | None = None, n_synthetic: int = 80) -> dict[str, pd.DataFrame]:
+def load_inputs(processed_dir: Path | None = None, n_synthetic: int = SYNTHETIC_N_HOMES) -> dict[str, pd.DataFrame]:
     processed_dir = processed_dir or PROCESSED_DIR
     fac = _read_parquet(processed_dir / "facilities.parquet")
     surveys = _read_parquet(processed_dir / "surveys.parquet")

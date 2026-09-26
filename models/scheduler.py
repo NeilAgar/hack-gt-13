@@ -77,7 +77,19 @@ def _try_pulp_lp(
     if eligible:
         prob += pulp.lpSum(eligible) <= k_eff
     try:
-        status = prob.solve(pulp.PULP_CBC_CMD(msg=False, timeLimit=20))
+        solvers = []
+        if hasattr(pulp, "COIN_CMD"):
+            solvers.append(pulp.COIN_CMD(msg=False, timeLimit=20))
+        solvers.append(pulp.PULP_CBC_CMD(msg=False, timeLimit=20))
+        status = None
+        for solver in solvers:
+            try:
+                status = prob.solve(solver)
+                break
+            except Exception:
+                continue
+        if status is None:
+            return None
     except Exception:
         return None
     if pulp.LpStatus[status] != "Optimal":
