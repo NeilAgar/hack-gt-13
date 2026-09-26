@@ -1,11 +1,11 @@
 #include "display.h"
 
 #include <Arduino.h>
-#include <Wire.h>
 
 #include "config.h"
 
 #if OLED_ENABLED
+#include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 static Adafruit_SSD1306 oled(OLED_WIDTH, OLED_HEIGHT, &Wire, -1);

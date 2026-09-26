@@ -71,8 +71,10 @@ LightState LightClassifier::feed(uint32_t now_ms, int raw) {
 
 void LightSensor::begin(int pin) {
   pin_ = pin;
+#if defined(ESP_PLATFORM)
   analogReadResolution(12);
   analogSetPinAttenuation(pin_, ADC_11db);  // full 0–3.3 V range
+#endif  // the Nano's ADC is fixed at 10 bits, 0–5 V
   pinMode(pin_, INPUT);
 }
 

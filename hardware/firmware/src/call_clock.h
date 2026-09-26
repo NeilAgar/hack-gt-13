@@ -25,7 +25,7 @@ static const int8_t TRI_NULL = -1;
 
 struct CallEvent {
   EventType type;
-  char call_id[16];   // "<boot nonce hex4>-<counter 4 digits>", e.g. "a1b2-0007"
+  char call_id[12];   // "<boot nonce hex4>-<counter 4 digits>", e.g. "a1b2-0007"
   uint32_t ms;        // ms since boot at which the event happened
   int32_t wait_ds;    // time until someone arrived, in DECISECONDS (exact 1-decimal seconds); -1 = null
   int8_t no_entry;    // cancel/timeout only: 1 = nobody entered, 0 = someone did; TRI_NULL otherwise
@@ -55,7 +55,7 @@ class CallClock {
   uint32_t counter_ = 0;
   uint32_t call_start_ms_ = 0;
   int32_t wait_ds_ = -1;
-  char call_id_[16] = {0};
+  char call_id_[12] = {0};
 };
 
 // Deciseconds between two ms timestamps, rounded half-up. Exact integer so C++ and Python agree.

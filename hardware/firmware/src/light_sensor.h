@@ -36,7 +36,7 @@ class LightClassifier {
   bool flashing(uint32_t now_ms) const;
 
  private:
-  static const size_t kMaxTransitions = 16;
+  static const size_t kMaxTransitions = 8;  // FLASH needs 3 in the window; small for the Nano
   LightConfig cfg_;
   bool primed_ = false;
   float ema_ = 0;

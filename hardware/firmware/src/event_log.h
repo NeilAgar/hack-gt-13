@@ -34,12 +34,41 @@ struct EventFields {
   const char* prev_hash;
 };
 
+// Where streamed output goes: a buffer, Serial, or nowhere (hash only).
+class CcSink {
+ public:
+  virtual void write(const char* s, size_t n) = 0;
+  void puts(const char* s);
+};
+
+// A sink into a fixed buffer. ok() is false if it overflowed.
+class CcBufferSink : public CcSink {
+ public:
+  CcBufferSink(char* buf, size_t cap);
+  void write(const char* s, size_t n) override;
+  bool ok() const { return ok_; }
+  size_t len() const { return len_; }
+
+ private:
+  char* buf_;
+  size_t cap_;
+  size_t len_ = 0;
+  bool ok_ = true;
+};
+
+// Writes the canonical string minus its closing brace (streamed; no buffer needed).
+void cc_canonical_body(const EventFields& f, CcSink& out);
 // Writes the canonical string. Returns its length, or 0 if `cap` is too small.
 size_t cc_canonical(const EventFields& f, char* out, size_t cap);
 // hash_hex/sig_hex must hold 65 chars.
 void cc_hash_and_sign(const char* prev_hash, const char* canonical, const uint8_t* key, size_t key_len,
                       char* hash_hex, char* sig_hex);
-// Full line: canonical with ,"hash":"…","sig":"…" appended before the closing brace.
+// Hash only (no output): used to replay a chain.
+void cc_event_hash(const EventFields& f, char* hash_hex);
+// Streams the full signed line (canonical with ,"hash":"…","sig":"…" before the closing brace) to `out`
+// while hashing it. Never holds the line in RAM. hash_hex_out may be null.
+void cc_stream_event(const EventFields& f, const uint8_t* key, size_t key_len, CcSink& out, char* hash_hex_out);
+// Same, into a buffer. Returns the length, or 0 if `cap` is too small.
 size_t cc_event_line(const EventFields& f, const uint8_t* key, size_t key_len, char* out, size_t cap,
                      char* hash_hex_out);
 
@@ -65,7 +94,7 @@ class EventChain {
   char prev_hash_[CC_HASH_HEX_LEN + 1] = {0};
 };
 
-#if !defined(CALLCLOCK_NATIVE)
+#if defined(ESP_PLATFORM)
 #include <Print.h>
 
 // LittleFS persistence: /log.jsonl (one signed event per line) and /head.txt ("<next_seq> <prev_hash>").

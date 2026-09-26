@@ -5,117 +5,191 @@
 
 #include "crypto.h"
 
+#if defined(__AVR__)
+#include <avr/pgmspace.h>
+#define CC_P(s) PSTR(s)  // keep JSON keys and constants in flash: the Nano has 2 KB of RAM
+#else
+#define CC_P(s) (s)
+#endif
+
 const char* const CC_GENESIS_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
+
+void CcSink::puts(const char* s) { write(s, strlen(s)); }
+
+CcBufferSink::CcBufferSink(char* buf, size_t cap) : buf_(buf), cap_(cap) {
+  if (cap_) buf_[0] = '\0';
+}
+
+void CcBufferSink::write(const char* s, size_t n) {
+  if (!ok_ || len_ + n + 1 > cap_) {
+    ok_ = false;
+    return;
+  }
+  memcpy(buf_ + len_, s, n);
+  len_ += n;
+  buf_[len_] = '\0';
+}
 
 namespace {
 
-// Tiny bounded string builder.
-struct Buf {
-  char* p;
-  size_t cap;
-  size_t len = 0;
-  bool ok = true;
-  Buf(char* p_, size_t cap_) : p(p_), cap(cap_) {
-    if (cap) p[0] = '\0';
-  }
-  void raw(const char* s) {
-    size_t n = strlen(s);
-    if (len + n + 1 > cap) {
-      ok = false;
-      return;
+// Streams JSON pieces to a sink. Arguments of raw_P()/key() are CC_P() literals (flash on AVR).
+struct Writer {
+  CcSink& out;
+  void raw(const char* s) { out.puts(s); }
+  void raw_P(const char* p) {
+#if defined(__AVR__)
+    char chunk[16];
+    size_t n = 0;
+    for (char c; (c = (char)pgm_read_byte(p++)) != 0;) {
+      chunk[n++] = c;
+      if (n == sizeof(chunk)) {
+        out.write(chunk, n);
+        n = 0;
+      }
     }
-    memcpy(p + len, s, n + 1);
-    len += n;
+    if (n) out.write(chunk, n);
+#else
+    out.puts(p);
+#endif
   }
   void str(const char* s) {  // JSON string with escaping
-    raw("\"");
-    char tmp[8];
+    raw_P(CC_P("\""));
     for (const char* c = s; *c; c++) {
       unsigned char u = (unsigned char)*c;
       if (u == '"' || u == '\\') {
-        tmp[0] = '\\'; tmp[1] = (char)u; tmp[2] = 0;
-        raw(tmp);
+        char esc[2] = {'\\', (char)u};
+        out.write(esc, 2);
       } else if (u < 0x20) {
-        snprintf(tmp, sizeof(tmp), "\\u%04x", u);
-        raw(tmp);
+        static const char hex[] = "0123456789abcdef";
+        char esc[6] = {'\\', 'u', '0', '0', hex[u >> 4], hex[u & 15]};
+        out.write(esc, 6);
       } else {
-        tmp[0] = (char)u; tmp[1] = 0;
-        raw(tmp);
+        out.write((const char*)c, 1);
       }
     }
-    raw("\"");
+    raw_P(CC_P("\""));
   }
+  // `k` must be a CC_P() literal. Keys never need escaping.
   void key(const char* k, bool first = false) {
-    if (!first) raw(",");
-    str(k);
-    raw(":");
+    raw_P(first ? CC_P("\"") : CC_P(",\""));
+    raw_P(k);
+    raw_P(CC_P("\":"));
   }
-  void u32(uint32_t v) {
-    char tmp[16];
-    snprintf(tmp, sizeof(tmp), "%lu", (unsigned long)v);
-    raw(tmp);
+  void u32(uint32_t v) {  // no snprintf: saves stack on the Nano
+    char tmp[11];
+    size_t i = sizeof(tmp);
+    do {
+      tmp[--i] = (char)('0' + v % 10);
+      v /= 10;
+    } while (v);
+    out.write(tmp + i, sizeof(tmp) - i);
   }
-  void tri(int8_t v) { raw(v < 0 ? "null" : (v ? "true" : "false")); }
+  void tri(int8_t v) { raw_P(v < 0 ? CC_P("null") : (v ? CC_P("true") : CC_P("false"))); }
 };
 
-}  // namespace
-
-size_t cc_canonical(const EventFields& f, char* out, size_t cap) {
-  // Keys in sorted (byte) order. Keep in sync with CANONICAL_KEYS in hardware/eventlog.py.
-  Buf b(out, cap);
-  b.raw("{");
-  b.key("call_id", true); b.str(f.call_id);
-  b.key("ccn"); b.str(f.ccn);
-  b.key("device_id"); b.str(f.device_id);
-  b.key("event"); b.str(f.event);
-  b.key("ms"); b.u32(f.ms);
-  b.key("night"); b.tri(f.night);
-  b.key("no_entry"); b.tri(f.no_entry);
-  b.key("prev_hash"); b.str(f.prev_hash);
-  b.key("seq"); b.u32(f.seq);
-  b.key("synthetic"); b.raw(f.synthetic ? "true" : "false");
-  b.key("ts");
-  if (f.ts) b.str(f.ts); else b.raw("null");
-  b.key("v"); b.raw("1");
-  b.key("wait_s");
-  if (f.wait_ds < 0) {
-    b.raw("null");
-  } else {
-    char tmp[16];
-    snprintf(tmp, sizeof(tmp), "%ld.%ld", (long)(f.wait_ds / 10), (long)(f.wait_ds % 10));
-    b.raw(tmp);
+// Tees everything into a SHA-256 on its way to `out`.
+class HashingSink : public CcSink {
+ public:
+  explicit HashingSink(CcSink* out) : out_(out) {}
+  void write(const char* s, size_t n) override {
+    sha.update(s, n);
+    if (out_) out_->write(s, n);
   }
-  b.raw("}");
-  return b.ok ? b.len : 0;
+  CcSha256 sha;
+
+ private:
+  CcSink* out_;
+};
+
+// Hashes prev_hash + canonical, streaming the canonical body to `out` (may be null).
+void hash_canonical(const EventFields& f, CcSink* out, char* hash_hex) {
+  HashingSink hs(out);
+  hs.sha.update(f.prev_hash, CC_HASH_HEX_LEN);
+  cc_canonical_body(f, hs);
+  hs.sha.update("}", 1);  // the canonical string's closing brace is hashed but not printed here
+  uint8_t digest[32];
+  hs.sha.finish(digest);
+  cc_to_hex(digest, 32, hash_hex);
 }
 
-void cc_hash_and_sign(const char* prev_hash, const char* canonical, const uint8_t* key, size_t key_len,
-                      char* hash_hex, char* sig_hex) {
-  static char msg[CC_HASH_HEX_LEN + CC_LINE_MAX];
-  size_t ph = strlen(prev_hash), cl = strlen(canonical);
-  if (ph + cl > sizeof(msg)) cl = sizeof(msg) - ph;  // cannot happen with CC_LINE_MAX-sized canonicals
-  memcpy(msg, prev_hash, ph);
-  memcpy(msg + ph, canonical, cl);
-  uint8_t digest[32];
-  cc_sha256((const uint8_t*)msg, ph + cl, digest);
-  cc_to_hex(digest, 32, hash_hex);
+void sign_hex(const uint8_t* key, size_t key_len, const char* hash_hex, char* sig_hex) {
   uint8_t mac[32];
   cc_hmac_sha256(key, key_len, (const uint8_t*)hash_hex, CC_HASH_HEX_LEN, mac);
   cc_to_hex(mac, 32, sig_hex);
 }
 
+}  // namespace
+
+void cc_canonical_body(const EventFields& f, CcSink& out) {
+  // Keys in sorted (byte) order. Keep in sync with CANONICAL_KEYS in hardware/eventlog.py.
+  Writer b{out};
+  b.raw_P(CC_P("{"));
+  b.key(CC_P("call_id"), true); b.str(f.call_id);
+  b.key(CC_P("ccn")); b.str(f.ccn);
+  b.key(CC_P("device_id")); b.str(f.device_id);
+  b.key(CC_P("event")); b.str(f.event);
+  b.key(CC_P("ms")); b.u32(f.ms);
+  b.key(CC_P("night")); b.tri(f.night);
+  b.key(CC_P("no_entry")); b.tri(f.no_entry);
+  b.key(CC_P("prev_hash")); b.str(f.prev_hash);
+  b.key(CC_P("seq")); b.u32(f.seq);
+  b.key(CC_P("synthetic")); b.raw_P(f.synthetic ? CC_P("true") : CC_P("false"));
+  b.key(CC_P("ts"));
+  if (f.ts) b.str(f.ts); else b.raw_P(CC_P("null"));
+  b.key(CC_P("v")); b.raw_P(CC_P("1"));
+  b.key(CC_P("wait_s"));
+  if (f.wait_ds < 0) {
+    b.raw_P(CC_P("null"));
+  } else {
+    b.u32((uint32_t)f.wait_ds / 10);
+    b.raw_P(CC_P("."));
+    b.u32((uint32_t)f.wait_ds % 10);
+  }
+}
+
+size_t cc_canonical(const EventFields& f, char* out, size_t cap) {
+  CcBufferSink sink(out, cap);
+  cc_canonical_body(f, sink);
+  sink.puts("}");
+  return sink.ok() ? sink.len() : 0;
+}
+
+void cc_hash_and_sign(const char* prev_hash, const char* canonical, const uint8_t* key, size_t key_len,
+                      char* hash_hex, char* sig_hex) {
+  CcSha256 sha;
+  sha.update(prev_hash, strlen(prev_hash));
+  sha.update(canonical, strlen(canonical));
+  uint8_t digest[32];
+  sha.finish(digest);
+  cc_to_hex(digest, 32, hash_hex);
+  sign_hex(key, key_len, hash_hex, sig_hex);
+}
+
+void cc_event_hash(const EventFields& f, char* hash_hex) { hash_canonical(f, nullptr, hash_hex); }
+
+void cc_stream_event(const EventFields& f, const uint8_t* key, size_t key_len, CcSink& out, char* hash_hex_out) {
+  char local_hash[CC_HASH_HEX_LEN + 1];
+  char* hash_hex = hash_hex_out ? hash_hex_out : local_hash;
+  hash_canonical(f, &out, hash_hex);
+  uint8_t mac[32];
+  cc_hmac_sha256(key, key_len, (const uint8_t*)hash_hex, CC_HASH_HEX_LEN, mac);
+  Writer w{out};
+  w.raw_P(CC_P(",\"hash\":\""));
+  out.write(hash_hex, CC_HASH_HEX_LEN);
+  w.raw_P(CC_P("\",\"sig\":\""));
+  char hex[9];
+  for (uint8_t i = 0; i < 32; i += 4) {  // hex in small pieces instead of a second 65-byte buffer
+    cc_to_hex(mac + i, 4, hex);
+    out.write(hex, 8);
+  }
+  w.raw_P(CC_P("\"}"));
+}
+
 size_t cc_event_line(const EventFields& f, const uint8_t* key, size_t key_len, char* out, size_t cap,
                      char* hash_hex_out) {
-  size_t n = cc_canonical(f, out, cap);
-  if (n == 0) return 0;
-  char hash_hex[CC_HASH_HEX_LEN + 1], sig_hex[CC_HASH_HEX_LEN + 1];
-  cc_hash_and_sign(f.prev_hash, out, key, key_len, hash_hex, sig_hex);
-  // Replace the closing brace with the hash and signature.
-  const size_t extra = strlen(",\"hash\":\"\",\"sig\":\"\"}") + 2 * CC_HASH_HEX_LEN;
-  if (n - 1 + extra + 1 > cap) return 0;
-  n = n - 1 + (size_t)snprintf(out + n - 1, cap - (n - 1), ",\"hash\":\"%s\",\"sig\":\"%s\"}", hash_hex, sig_hex);
-  if (hash_hex_out) memcpy(hash_hex_out, hash_hex, CC_HASH_HEX_LEN + 1);
-  return n;
+  CcBufferSink sink(out, cap);
+  cc_stream_event(f, key, key_len, sink, hash_hex_out);
+  return sink.ok() ? sink.len() : 0;
 }
 
 bool EventChain::begin(const char* device_id, const char* ccn, const char* key_hex) {
@@ -154,7 +228,7 @@ size_t EventChain::append(const CallEvent& ev, const char* ts, int8_t night, cha
   return n;
 }
 
-#if !defined(CALLCLOCK_NATIVE)
+#if defined(ESP_PLATFORM)
 #include <FS.h>
 #include <LittleFS.h>
 

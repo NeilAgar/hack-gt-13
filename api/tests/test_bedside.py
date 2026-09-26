@@ -155,3 +155,12 @@ def test_no_inspection_timing_leaks():
     body = client.get(f"/api/facility/{CCN}/bedside").text
     for k in ("p_next_60d", "p_survey_week", "weeks_since_last", "next_survey"):
         assert k not in body
+
+
+def test_db_deleted_while_running_is_recreated(tmp_path, monkeypatch):
+    """Resetting the demo by deleting data/bedside.sqlite must not need an API restart."""
+    post(make_calls())
+    (tmp_path / "bedside.sqlite").unlink()
+    res = post(make_calls())
+    assert res["accepted"] == 5 and res["verified"] is True
+    assert client.get(f"/api/facility/{CCN}/bedside").json()["n_calls"] == 2
