@@ -59,6 +59,7 @@ def test_contract_tables_and_counts() -> None:
     assert (scores.loc[scores["trophy_flag"], "ci_low"] > 0).all()
     assert (scores["ci_low"] <= scores["score_pct"]).all()
     assert (scores["score_pct"] <= scores["ci_high"]).all()
+    assert (scores["ci_high"] - scores["ci_low"]).median() > 2
     sample = scores.iloc[0]
     headline = format_headline(
         sample["score_pct"], sample["ci_low"], sample["ci_high"], int(sample["n_surveys"])

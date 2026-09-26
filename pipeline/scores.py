@@ -184,8 +184,11 @@ def build_scores(daily: pd.DataFrame, surveys: pd.DataFrame, facilities: pd.Data
     ci_low = pd.Series(ci_low_s).reindex(raw.index)
     ci_high = pd.Series(ci_high_s).reindex(raw.index)
     w = w.reindex(raw.index)
-    ci_low = w * ci_low + (1.0 - w) * state_mean
-    ci_high = w * ci_high + (1.0 - w) * state_mean
+    score = score.reindex(raw.index)
+    # Posterior SD scales by sqrt(w): keep the raw interval's shape around the shrunk score.
+    k = np.sqrt(w)
+    ci_low = score - k * (raw - ci_low)
+    ci_high = score + k * (ci_high - raw)
 
     rbs = facilities.set_index("ccn")["rbs_proxy_eligible"]
     names = facilities.set_index("ccn")["name"]
