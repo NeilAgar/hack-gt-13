@@ -78,9 +78,9 @@ def generate(ccn, device, key, days, end, rng):
             timeline.append((t_in, "entry", {"wait_s": wait}))
             timeline.append((t_off, "cancel", {"wait_s": wait, "no_entry": False}))
         busy_until = t_off + timedelta(seconds=30)
+        if t_off > datetime.now(TZ):  # never leave a half-finished call (or future events) behind
+            continue
         for t, kind, kw in timeline:
-            if t > datetime.now(TZ):
-                break
             ms = int((t - boot).total_seconds() * 1000)
             events.append(chain.emit(call_id=call_id, event=kind, ts=iso_local(t), ms=ms, night=is_night(t),
                                      **kw))

@@ -100,3 +100,6 @@ def trophy():
 
 app.include_router(public)
 app.include_router(regulator)
+
+from api.routes.bedside import router as bedside_router  # noqa: E402  Call Clock (hardware/)
+app.include_router(bedside_router)
