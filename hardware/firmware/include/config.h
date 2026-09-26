@@ -31,7 +31,9 @@
 
 // ───────────────────────────── Demo vs real thresholds ──────────────
 // DEMO_MODE shortens the wait-colour thresholds so a live demo changes colour within seconds.
+#ifndef DEMO_MODE  // overridable with -DDEMO_MODE=… in platformio.ini build_flags
 #define DEMO_MODE 1
+#endif
 #if DEMO_MODE
 #define WAIT_AMBER_S 15   // green below this many seconds of waiting
 #define WAIT_RED_S 30     // amber below this, red at or above
@@ -51,7 +53,9 @@
 #define LIGHT_DELTA 300            // adaptive mode: ON when smoothed > baseline + LIGHT_DELTA
 // Fixed-threshold mode (recommended once calibrated): set to the MIDPOINT of the raw OFF and ON
 // readings you see with `cal on`. 0 = use the adaptive baseline + LIGHT_DELTA instead.
+#ifndef LDR_THRESHOLD  // overridable with -DLDR_THRESHOLD=… in platformio.ini build_flags
 #define LDR_THRESHOLD 0
+#endif
 // Hysteresis in raw counts around the threshold. Rule of thumb: 10% of (raw_on - raw_off).
 #define LDR_HYSTERESIS 60
 #define LIGHT_ON_HOLD_MS 300       // light must look ON for this long before we believe it
@@ -59,7 +63,9 @@
 #define FLASH_WINDOW_MS 2000       // ≥ FLASH_MIN_TRANSITIONS lit/unlit flips in this window = FLASH
 #define FLASH_MIN_TRANSITIONS 3
 // Print "DBG raw=… baseline=… state=…" every 2 s from boot. Also toggled at runtime by `cal on|off`.
+#ifndef CALIBRATE  // overridable with -DCALIBRATE=… in platformio.ini build_flags
 #define CALIBRATE 0
+#endif
 #define CALIBRATE_PRINT_MS 2000
 
 // ───────────────────────────── Entry sensing ────────────────────────
@@ -69,25 +75,39 @@
 #define ENTRY_LD2410_UART 2  // HLK-LD2410C over UART (basic reporting frames, 256000 baud)
 #define ENTRY_REED 3         // magnetic reed switch on the door (or any push button to GND)
 #define ENTRY_NONE 4         // no entry sensor: every call ends "no entry" (bench test only)
+#ifndef ENTRY_SENSOR  // overridable with -DENTRY_SENSOR=… in platformio.ini build_flags
 #define ENTRY_SENSOR ENTRY_PIR
+#endif
 #define ENTRY_REFRACTORY_MS 5000   // ignore further entry edges for 5 s after one fires
 #define PIR_WARMUP_MS 30000        // HC-SR501 needs ~30 s after power-up before its output is sane
 
 // ───────────────────────────── Output devices ───────────────────────
+#ifndef OLED_ENABLED  // overridable with -DOLED_ENABLED=… in platformio.ini build_flags
 #define OLED_ENABLED 1
+#endif
 #define OLED_I2C_ADDR 0x3C
 #define OLED_WIDTH 128
 #define OLED_HEIGHT 64
+#ifndef RGB_ENABLED  // overridable with -DRGB_ENABLED=… in platformio.ini build_flags
 #define RGB_ENABLED 1
+#endif
+#ifndef RGB_COMMON_ANODE
 #define RGB_COMMON_ANODE 0   // 1 if your RGB LED's common leg goes to 3V3 (logic inverted)
-#define USE_NEOPIXEL 0       // 1 = single WS2812 on PIN_NEOPIXEL instead of the discrete RGB LED
+#endif
+#ifndef USE_NEOPIXEL  // overridable with -DUSE_NEOPIXEL=… in platformio.ini build_flags
+#define USE_NEOPIXEL 0       // 1 = single WS2812 on PIN_RGB_PIXEL instead of the discrete RGB LED
+#endif
+#ifndef BUZZER_ENABLED  // overridable with -DBUZZER_ENABLED=… in platformio.ini build_flags
 #define BUZZER_ENABLED 0     // ACTIVE buzzer (beeps when driven HIGH); chirps every 10 s while waiting
+#endif
 #define BUZZER_CHIRP_EVERY_MS 10000
 #define BUZZER_CHIRP_MS 60
 
 // ───────────────────────────── Networking (optional) ────────────────
 // Default OFF: the USB serial bridge (hardware/bridge/serial_bridge.py) is the primary uplink.
+#ifndef WIFI_ENABLED  // overridable with -DWIFI_ENABLED=… in platformio.ini build_flags
 #define WIFI_ENABLED 0
+#endif
 #define WIFI_SSID "your-ssid"
 #define WIFI_PASS "your-password"
 #define API_URL "http://192.168.1.10:8000/api/bedside"
@@ -113,7 +133,7 @@
 #define PIN_RGB_R 10           // RGB red   via 220 Ω
 #define PIN_RGB_G 11           // RGB green via 220 Ω
 #define PIN_RGB_B 12           // RGB blue  via 220 Ω
-#define PIN_NEOPIXEL 48        // on-board WS2812 of the DevKitC-1 (some revisions use 38)
+#define PIN_RGB_PIXEL 48        // on-board WS2812 of the DevKitC-1 (some revisions use 38)
 #define PIN_BUZZER 13          // active buzzer (+) ; (-) to GND
 #define REED_INTERNAL_PULLUP 1
 #else
@@ -134,7 +154,7 @@
 #define PIN_RGB_R 18           // RGB red   via 220 Ω
 #define PIN_RGB_G 19           // RGB green via 220 Ω
 #define PIN_RGB_B 23           // RGB blue  via 220 Ω
-#define PIN_NEOPIXEL 4         // WS2812 data (only if USE_NEOPIXEL)
+#define PIN_RGB_PIXEL 4         // WS2812 data (only if USE_NEOPIXEL)
 #define PIN_BUZZER 33          // active buzzer (+) ; (-) to GND
 #define REED_INTERNAL_PULLUP 0
 #endif
