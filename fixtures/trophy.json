@@ -1,0 +1,16 @@
+[
+  {
+    "ccn": "115999",
+    "name": "Sample Harbor Health & Rehab",
+    "overall_star": 5,
+    "score_pct": 10.8,
+    "ci_low": 4.9
+  },
+  {
+    "ccn": "115996",
+    "name": "Sample Riverbend Senior Living",
+    "overall_star": 5,
+    "score_pct": 7.3,
+    "ci_low": 1.2
+  }
+]
