@@ -18,12 +18,12 @@ from pipeline.cms import (
     BOOTSTRAP_REPS,
     BOOTSTRAP_SEED,
     HEADLINE_TEMPLATE,
+    LOW_MIN_INSPECTIONS,
     OVERLAP_DAYS,
     PRE_RAMP,
     PROCESSED,
     SCORES_COLS,
     SURGE,
-    WATCH_CI_HIGH_MIN,
 )
 from pipeline.tables import drop_overlapping_surveys, event_panel
 
@@ -39,11 +39,25 @@ def format_headline(score_pct: float, ci_low: float, ci_high: float, n_surveys: 
     )
 
 
-def assign_label(score_pct: float, ci_low: float, ci_high: float) -> str:
-    """Staffing Consistency. Low = CI entirely above 0 (survey-responsive staffing)."""
-    if ci_low > 0:
+def state_average(raw_pct: pd.Series) -> float:
+    """Georgia average: mean of the facility-level raw percentages. It is the value scores are shrunk
+    toward, and the same average api/adjusted.py (state_average) uses for the Pop Quiz star drop."""
+    return float(raw_pct.dropna().mean())
+
+
+def assign_label(
+    score_pct: float, ci_low: float, ci_high: float, n_surveys: int, state_avg: float
+) -> str:
+    """Staffing Consistency, judged against the typical Georgia home rather than against zero.
+
+    Low uses the same evidence test as the Pop Quiz star drop: at least LOW_MIN_INSPECTIONS inspections
+    and the whole range strictly above the Georgia average (ci_low == state_avg does not qualify).
+    Watch: not Low, but the range reaches above the average (it crosses the average, or it is above it
+    with only one inspection). High: the whole range is at or below the average.
+    """
+    if n_surveys >= LOW_MIN_INSPECTIONS and ci_low > state_avg:
         return "Low"
-    if ci_high > WATCH_CI_HIGH_MIN:
+    if ci_high > state_avg:
         return "Watch"
     return "High"
 
@@ -204,9 +218,11 @@ def build_scores(daily: pd.DataFrame, surveys: pd.DataFrame, facilities: pd.Data
             "weekend_dip_pct": dip.reindex(raw.index).to_numpy(),
         }
     )
+    state_avg = state_average(out["raw_pct"])
+    print(f"Georgia average raw_pct (label reference): {state_avg:.3f}%")
     out["label"] = [
-        assign_label(s, lo, hi)
-        for s, lo, hi in zip(out["score_pct"], out["ci_low"], out["ci_high"])
+        assign_label(s, lo, hi, int(n), state_avg)
+        for s, lo, hi, n in zip(out["score_pct"], out["ci_low"], out["ci_high"], out["n_surveys"])
     ]
     out["trophy_flag"] = (
         rbs.reindex(out["ccn"]).fillna(False).to_numpy() & (out["ci_low"] > 0)

@@ -1,5 +1,6 @@
 "use client";
 
+import { clampCapacity, DEFAULT_CAPACITY } from "@/lib/regulator";
 import { useState, type FormEvent } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
@@ -11,11 +12,15 @@ const BAR_COLORS = ["#8d7b66", "#123f4c"];
 export function SimulationChart({
   initialSimulation,
   loadSimulation,
+  minCapacity = 1,
 }: {
   initialSimulation: SimulateResponse;
   loadSimulation: (capacity: number) => Promise<SimulateResponse>;
+  /** Smallest capacity allowed: the number of legally overdue homes. */
+  minCapacity?: number;
 }) {
-  const [capacity, setCapacity] = useState(3);
+  const min = Math.max(1, minCapacity);
+  const [capacity, setCapacity] = useState(() => clampCapacity(DEFAULT_CAPACITY, min));
   const [simulation, setSimulation] = useState(initialSimulation);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -38,7 +43,9 @@ export function SimulationChart({
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void run(capacity);
+    const chosen = clampCapacity(capacity, min);
+    setCapacity(chosen);
+    void run(chosen);
   }
 
   const statusQuo = simulation.status_quo?.undetected_shirk_resident_months;
@@ -68,10 +75,11 @@ export function SimulationChart({
           Capacity
           <input
             type="number"
-            min={1}
+            min={min}
             step={1}
             value={capacity}
             onChange={(event) => setCapacity(Number(event.target.value))}
+            onBlur={() => setCapacity(clampCapacity(capacity, min))}
             required
           />
         </label>

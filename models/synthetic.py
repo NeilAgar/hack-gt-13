@@ -52,6 +52,19 @@ def _draw_lag_weeks(rng: np.random.Generator, size: int) -> np.ndarray:
     return lags
 
 
+# Same rule as pipeline/scores.py assign_label (and the evidence test in api/adjusted.py). Duplicated
+# rather than imported so models/ doesn't depend on pipeline/.
+LOW_MIN_INSPECTIONS = 2
+
+
+def _consistency_label(ci_low: float, ci_high: float, n_surveys: int, state_avg: float) -> str:
+    if n_surveys >= LOW_MIN_INSPECTIONS and ci_low > state_avg:
+        return "Low"
+    if ci_high > state_avg:
+        return "Watch"
+    return "High"
+
+
 def build_synthetic(n_homes: int = SYNTHETIC_N_HOMES, seed: int = SYNTHETIC_SEED) -> dict[str, pd.DataFrame]:
     rng = np.random.default_rng(seed)
     as_of = date.fromisoformat(AS_OF_DATE)
@@ -145,13 +158,21 @@ def build_synthetic(n_homes: int = SYNTHETIC_N_HOMES, seed: int = SYNTHETIC_SEED
                 "surge_pct": max(score, 0) + float(rng.uniform(0, 6)),
                 "weekend_dip_pct": float(rng.uniform(-12, 2)),
                 "agency_share": float(np.clip(rng.beta(2, 10), 0, 0.6)),
-                "label": "Low" if score >= 6 else ("Watch" if score >= 1.5 else "High"),
+                "label": None,  # set below, once the Georgia average of all synthetic homes is known
                 "trophy_flag": False,
             }
         )
 
     facilities = pd.DataFrame(rows_fac)
     scores = pd.DataFrame(scores_rows)
+    # Generated homes get the pipeline's label rule; fixture homes keep their fixture labels.
+    state_avg = float(scores["raw_pct"].mean())
+    generated = ~scores["ccn"].isin(fixture_ccns)
+    scores.loc[generated, "label"] = [
+        _consistency_label(lo, hi, int(n), state_avg)
+        for lo, hi, n in zip(scores.loc[generated, "ci_low"], scores.loc[generated, "ci_high"],
+                             scores.loc[generated, "n_surveys"])
+    ]
 
     for rec in facilities.itertuples(index=False):
         ccn = rec.ccn

@@ -52,3 +52,21 @@ def test_adjusted_rating_on_real_data_is_consistent():
             assert r["adjusted_star"] >= 1 and r["adjust_reason"]
             if r["adjusted_star"] < r["overall_star"]:
                 assert r["n_surveys"] >= 2 and "survey-responsive staffing" in r["adjust_reason"]
+
+
+def test_low_label_and_star_drop_use_the_same_evidence():
+    """Every home the star rule would lower is labeled Low, and every Low home would be lowered unless it
+    has no CMS rating or is already at 1 star (those guards only stop the displayed star from changing)."""
+    from api import data
+    p = data._processed()
+    if p is None:
+        pytest.skip("no processed data")
+    rows = [r for r in p["details"].values() if r.get("score_pct") is not None]
+    avg = adjusted.state_average(r["raw_pct"] for r in rows)
+    for r in rows:
+        evidence = r["n_surveys"] >= adjusted.MIN_INSPECTIONS and r["ci_low"] > avg
+        assert (r["label"] == "Low") == evidence, r["ccn"]
+        if r["adjusted_star"] is not None and r["adjusted_star"] < r["overall_star"]:
+            assert r["label"] == "Low", r["ccn"]
+        if r["label"] == "Low" and r["overall_star"] not in (None, 1):
+            assert r["adjusted_star"] == r["overall_star"] - 1, r["ccn"]

@@ -43,7 +43,8 @@ export const UNSCORED_COPY =
 export const LABEL_NOTE: Record<ConsistencyLabel, string> = {
   High: "Staffing stays steadier across the inspection cycle.",
   Watch: "The pattern is mixed, or the range is too wide to call.",
-  Low: "Nurse hours run higher through the end of an inspection than a month later.",
+  Low:
+    "Survey-responsive staffing: across at least two inspections, nurse hours run higher around inspections than at a typical Georgia home, and the whole uncertainty range is above that average. PBJ staffing data is self-reported.",
 };
 
 export function isConsistencyLabel(value: string | null | undefined): value is ConsistencyLabel {

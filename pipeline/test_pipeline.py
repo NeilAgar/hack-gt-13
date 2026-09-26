@@ -9,7 +9,9 @@ from pipeline.cms import (
     SCORES_COLS,
     SURVEYS_COLS,
 )
-from pipeline.scores import format_headline
+import pytest
+
+from pipeline.scores import assign_label, format_headline, state_average
 from pipeline.main import main
 
 
@@ -79,3 +81,34 @@ def test_contract_tables_and_counts() -> None:
     assert n_facilities > 300
     assert n_surveys > 500
     assert len(scores) > 50
+
+
+AVG = 1.2
+
+
+@pytest.mark.parametrize(
+    "ci_low, ci_high, n_surveys, expected",
+    [
+        (2.0, 5.0, 2, "Low"),     # two inspections, whole range above the Georgia average
+        (2.0, 5.0, 1, "Watch"),   # above the average, but only one inspection
+        (0.5, 3.0, 2, "Watch"),   # range crosses the average
+        (-1.0, 1.2, 2, "High"),   # ci_high at the average
+        (-3.0, 0.5, 3, "High"),   # ci_high below the average
+        (1.2, 4.0, 2, "Watch"),   # ci_low equal to the average is not Low (strict)
+    ],
+)
+def test_assign_label_uses_the_star_drop_evidence_test(ci_low, ci_high, n_surveys, expected) -> None:
+    assert assign_label(0.0, ci_low, ci_high, n_surveys, AVG) == expected
+
+
+def test_stored_labels_follow_the_rule() -> None:
+    _ensure_processed()
+    scores = pd.read_parquet(PROCESSED / "scores.parquet")
+    avg = state_average(scores["raw_pct"])
+    expected = [
+        assign_label(s, lo, hi, int(n), avg)
+        for s, lo, hi, n in zip(scores["score_pct"], scores["ci_low"], scores["ci_high"], scores["n_surveys"])
+    ]
+    assert list(scores["label"]) == expected
+    low = scores[scores["label"] == "Low"]
+    assert ((low["n_surveys"] >= 2) & (low["ci_low"] > avg)).all()

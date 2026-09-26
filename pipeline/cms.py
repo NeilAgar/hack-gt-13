@@ -170,9 +170,11 @@ SURGE = (0, 3)
 BASELINE = (28, 56)
 CURVE_WINDOW = (-42, 56)
 OVERLAP_DAYS = 150
-# Staffing Consistency (public label). Low = significant survey-responsive staffing.
+# Staffing Consistency (public label), judged against the Georgia average; see assign_label.
 LABELS = ("High", "Watch", "Low")
-WATCH_CI_HIGH_MIN = 5.0  # if CI includes 0 but upper bound > 5 → Watch
+# Low needs a repeated pattern: at least this many usable inspections. Same evidence test as the
+# Pop Quiz star drop (api/adjusted.py MIN_INSPECTIONS); the pipeline must not import the api package.
+LOW_MIN_INSPECTIONS = 2
 BOOTSTRAP_REPS = 500
 BOOTSTRAP_SEED = 34037
 # Days −14..−1 on the exit calendar include the inspection; do not say "before".

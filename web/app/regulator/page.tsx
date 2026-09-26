@@ -1,8 +1,9 @@
+import { DEFAULT_CAPACITY, overdueCount } from "@/lib/regulator";
 import { PredictabilityPanel } from "@/components/PredictabilityPanel";
 import { SchedulePanel } from "@/components/SchedulePanel";
 import { SimulationChart } from "@/components/SimulationChart";
 import { getFacilities, getPredictability, getSimulate, getTrophy, postSchedule } from "@/lib/api";
-import { formatPct, formatRange, isScored } from "@/lib/format";
+import { currentMonth, formatPct, formatRange, isScored } from "@/lib/format";
 import type { ScheduleRequest, ScheduleResponse, SimulateResponse } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -21,10 +22,18 @@ export default async function RegulatorPage() {
   const [trophy, facilities, simulation, predictability] = await Promise.all([
     getTrophy(),
     getFacilities("", 400),
-    getSimulate(3),
+    getSimulate(DEFAULT_CAPACITY),
     getPredictability(),
   ]);
   const byCcn = new Map(facilities.map((facility) => [facility.ccn, facility]));
+  // The schedule marks every legally overdue home as forced; that count is the smallest usable capacity.
+  let overdue = 0;
+  try {
+    overdue = overdueCount(await postSchedule({ month: currentMonth(), capacity: DEFAULT_CAPACITY, seed: 0 }));
+  } catch {
+    overdue = 0;
+  }
+  const minCapacity = Math.max(1, overdue);
 
   return (
     <>
@@ -78,8 +87,8 @@ export default async function RegulatorPage() {
         )}
       </section>
 
-      <SchedulePanel generateSchedule={generateSchedule} />
-      <SimulationChart initialSimulation={simulation} loadSimulation={loadSimulation} />
+      <SchedulePanel generateSchedule={generateSchedule} minCapacity={minCapacity} overdue={overdue} />
+      <SimulationChart initialSimulation={simulation} loadSimulation={loadSimulation} minCapacity={minCapacity} />
       <PredictabilityPanel rows={predictability} />
     </>
   );
