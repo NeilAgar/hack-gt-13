@@ -1,0 +1,451 @@
+{
+  "month": "2026-10",
+  "capacity": 6,
+  "solver": "lp",
+  "selected": [
+    {
+      "ccn": "110031",
+      "name": "Sample GA Home 110031",
+      "prob": 1.0,
+      "forced": true,
+      "off_hours": false
+    },
+    {
+      "ccn": "115999",
+      "name": "Sample Harbor Health & Rehab",
+      "prob": 1.0,
+      "forced": true,
+      "off_hours": false
+    },
+    {
+      "ccn": "110055",
+      "name": "Sample GA Home 110055",
+      "prob": 0.402152,
+      "forced": false,
+      "off_hours": false
+    },
+    {
+      "ccn": "110014",
+      "name": "Sample GA Home 110014",
+      "prob": 0.391707,
+      "forced": false,
+      "off_hours": false
+    },
+    {
+      "ccn": "110020",
+      "name": "Sample GA Home 110020",
+      "prob": 0.263375,
+      "forced": false,
+      "off_hours": false
+    },
+    {
+      "ccn": "110030",
+      "name": "Sample GA Home 110030",
+      "prob": 0.219571,
+      "forced": false,
+      "off_hours": true
+    }
+  ],
+  "probs": [
+    {
+      "ccn": "110031",
+      "prob": 1.0,
+      "forced": true
+    },
+    {
+      "ccn": "115999",
+      "prob": 1.0,
+      "forced": true
+    },
+    {
+      "ccn": "110022",
+      "prob": 0.437403,
+      "forced": false
+    },
+    {
+      "ccn": "110055",
+      "prob": 0.402152,
+      "forced": false
+    },
+    {
+      "ccn": "110014",
+      "prob": 0.391707,
+      "forced": false
+    },
+    {
+      "ccn": "115996",
+      "prob": 0.367478,
+      "forced": false
+    },
+    {
+      "ccn": "110045",
+      "prob": 0.35636,
+      "forced": false
+    },
+    {
+      "ccn": "110001",
+      "prob": 0.317666,
+      "forced": false
+    },
+    {
+      "ccn": "110036",
+      "prob": 0.309438,
+      "forced": false
+    },
+    {
+      "ccn": "110020",
+      "prob": 0.263375,
+      "forced": false
+    },
+    {
+      "ccn": "110030",
+      "prob": 0.219571,
+      "forced": false
+    },
+    {
+      "ccn": "110044",
+      "prob": 0.206214,
+      "forced": false
+    },
+    {
+      "ccn": "110012",
+      "prob": 0.188856,
+      "forced": false
+    },
+    {
+      "ccn": "110010",
+      "prob": 0.172325,
+      "forced": false
+    },
+    {
+      "ccn": "110028",
+      "prob": 0.119673,
+      "forced": false
+    },
+    {
+      "ccn": "110033",
+      "prob": 0.088198,
+      "forced": false
+    },
+    {
+      "ccn": "110046",
+      "prob": 0.077593,
+      "forced": false
+    },
+    {
+      "ccn": "110040",
+      "prob": 0.039281,
+      "forced": false
+    },
+    {
+      "ccn": "110059",
+      "prob": 0.039213,
+      "forced": false
+    },
+    {
+      "ccn": "110027",
+      "prob": 0.0035,
+      "forced": false
+    },
+    {
+      "ccn": "110000",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110002",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110003",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110004",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110005",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110006",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110007",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110008",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110009",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110011",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110013",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110015",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110016",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110017",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110018",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110019",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110021",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110023",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110024",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110025",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110026",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110029",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110032",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110034",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110035",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110037",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110038",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110039",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110041",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110042",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110043",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110047",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110048",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110049",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110050",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110051",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110052",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110053",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110054",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110056",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110057",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110058",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110060",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110061",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110062",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110063",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110064",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110065",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110066",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110067",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110068",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110069",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110070",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110071",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110072",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "110073",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "115994",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "115995",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "115997",
+      "prob": 0.0,
+      "forced": false
+    },
+    {
+      "ccn": "115998",
+      "prob": 0.0,
+      "forced": false
+    }
+  ]
+}

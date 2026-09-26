@@ -1,0 +1,13 @@
+{
+  "months": 36,
+  "capacity": 6,
+  "illustrative": true,
+  "status_quo": {
+    "undetected_shirk_resident_months": 289576.9
+  },
+  "popquiz": {
+    "undetected_shirk_resident_months": 282126.4
+  },
+  "reduction_pct": 2.6,
+  "note": "Illustrative model. External benchmark: Chen & Dillender (NBER w34037); Gandhi, Olenski & Shi (NBER w34491). Does not estimate lives saved."
+}
