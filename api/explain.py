@@ -24,7 +24,9 @@ _NUM = re.compile(r"-?\d+(?:\.\d+)?")
 
 
 def facts_for(fac):
-    return {k: fac[k] for k in FACT_FIELDS if fac.get(k) is not None}
+    """The facts Grok may restate. Floats are rounded to 1 decimal, as the web page shows them."""
+    return {k: round(v, 1) if isinstance(v, float) else v
+            for k, v in ((k, fac.get(k)) for k in FACT_FIELDS) if v is not None}
 
 
 def template(f):

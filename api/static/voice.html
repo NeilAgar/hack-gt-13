@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pop Quiz Voice Line</title>
+<style>
+  :root { --bg:#f4efe6; --panel:#fffdf8; --ink:#1b2a33; --muted:#5b6770; --accent:#123f4c; --line:#e3dccf; --you:#e8f0f2; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0f1a1f; --panel:#16252c; --ink:#e8eef0; --muted:#9fb0b8; --accent:#5fb3c7; --line:#24363e; --you:#1d333b; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width:720px; margin:0 auto; padding:24px 16px 48px; }
+  .eyebrow { font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin:0; }
+  h1 { font-family: Georgia, "Times New Roman", serif; font-size:32px; margin:4px 0 8px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; margin-top:16px; }
+  button { font:inherit; background:var(--accent); color:#fff; border:0; border-radius:8px; padding:10px 18px; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  #status { color:var(--muted); margin-left:12px; }
+  #log { display:flex; flex-direction:column; gap:8px; min-height:120px; }
+  .msg { padding:8px 12px; border-radius:10px; max-width:90%; white-space:pre-wrap; }
+  .you { background:var(--you); align-self:flex-end; }
+  .grok { border:1px solid var(--line); align-self:flex-start; }
+  .sys { color:var(--muted); font-size:14px; align-self:center; }
+  form { display:flex; gap:8px; margin-top:12px; }
+  input { flex:1; font:inherit; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); min-width:0; }
+  footer { color:var(--muted); font-size:13px; margin-top:24px; }
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">Pop Quiz · Georgia nursing homes</p>
+  <h1>Voice line</h1>
+  <p>Ask how a home staffs around state inspections, e.g. <em>"How does Stevens Park in Augusta staff when inspectors
+    aren't around?"</em> Answers use only our computed numbers, always with their uncertainty range.</p>
+
+  <div class="panel">
+    <button id="call">Start call</button><span id="status">Not connected</span>
+    <form id="textform">
+      <input id="text" placeholder="Or type a question" autocomplete="off" aria-label="Type a question" disabled>
+      <button id="send" disabled>Send</button>
+    </form>
+  </div>
+
+  <div class="panel"><div id="log" aria-live="polite"></div></div>
+
+  <footer>PBJ staffing data is self-reported by facilities. Methods follow Chen &amp; Dillender (NBER w34037) and
+    Gandhi, Olenski &amp; Shi (NBER w34491). This line never discusses when a home's next inspection may happen.</footer>
+</main>
+
+<script>
+const RATE = 24000;
+const $ = (id) => document.getElementById(id);
+let ws, ctx, micStream, micNode, playAt = 0, playing = [], grokLine = null, youLine = null;
+
+function say(cls, text) {
+  const el = document.createElement("div");
+  el.className = "msg " + cls;
+  el.textContent = text;
+  $("log").appendChild(el);
+  el.scrollIntoView({ block: "end" });
+  return el;
+}
+function status(t) { $("status").textContent = t; }
+function send(obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); }
+
+function toBase64(int16) {
+  let s = "", b = new Uint8Array(int16.buffer);
+  for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+function fromBase64(b64) {
+  const bin = atob(b64), out = new Int16Array(bin.length >> 1);
+  for (let i = 0; i < out.length; i++) out[i] = (bin.charCodeAt(2 * i + 1) << 8) | bin.charCodeAt(2 * i);
+  return out;
+}
+
+function playPcm(b64) {
+  const pcm = fromBase64(b64), buf = ctx.createBuffer(1, pcm.length, RATE), ch = buf.getChannelData(0);
+  for (let i = 0; i < pcm.length; i++) ch[i] = pcm[i] / 32768;
+  const src = ctx.createBufferSource();
+  src.buffer = buf; src.connect(ctx.destination);
+  playAt = Math.max(playAt, ctx.currentTime);
+  src.start(playAt); playAt += buf.duration;
+  playing.push(src); src.onended = () => { playing = playing.filter((s) => s !== src); };
+}
+function stopPlayback() { playing.forEach((s) => { try { s.stop(); } catch {} }); playing = []; playAt = 0; }
+
+async function startMic() {
+  micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+  const worklet = `class Mic extends AudioWorkletProcessor {
+    process(inputs) { const ch = inputs[0][0]; if (ch) this.port.postMessage(ch.slice(0)); return true; } }
+    registerProcessor("mic", Mic);`;
+  await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([worklet], { type: "text/javascript" })));
+  micNode = new AudioWorkletNode(ctx, "mic");
+  let pending = [];
+  micNode.port.onmessage = (e) => {
+    pending.push(e.data);
+    if (pending.length < 16) return;  // ~85 ms per message
+    const n = pending.reduce((a, c) => a + c.length, 0), pcm = new Int16Array(n);
+    let o = 0;
+    for (const c of pending) for (let i = 0; i < c.length; i++) pcm[o++] = Math.max(-1, Math.min(1, c[i])) * 0x7fff;
+    pending = [];
+    send({ type: "input_audio_buffer.append", audio: toBase64(pcm) });
+  };
+  ctx.createMediaStreamSource(micStream).connect(micNode);
+}
+
+async function answerTool(ev) {
+  let args = {};
+  try { args = JSON.parse(ev.arguments || "{}"); } catch {}
+  say("sys", `Looking up "${args.query || ""}"…`);
+  let output;
+  try {
+    const r = await fetch(`/api/voice/lookup?q=${encodeURIComponent(args.query || "")}`);
+    output = await r.json();
+  } catch (e) { output = { error: "lookup failed" }; }
+  send({ type: "conversation.item.create", item: { type: "function_call_output", call_id: ev.call_id, output: JSON.stringify(output) } });
+  send({ type: "response.create" });
+}
+
+function onEvent(ev) {
+  switch (ev.type) {
+    case "session.updated": status("Connected. Start talking."); break;
+    case "input_audio_buffer.speech_started": stopPlayback(); youLine = say("you", "…"); break;
+    case "conversation.item.input_audio_transcription.updated":
+    case "conversation.item.input_audio_transcription.completed":
+      if (ev.transcript) (youLine || (youLine = say("you", ""))).textContent = ev.transcript; break;
+    case "response.created": grokLine = null; break;
+    case "response.output_audio.delta": case "response.audio.delta": playPcm(ev.delta); break;
+    case "response.output_audio_transcript.delta": case "response.audio_transcript.delta":
+    case "response.output_text.delta": case "response.text.delta":
+      (grokLine || (grokLine = say("grok", ""))).textContent += ev.delta; break;
+    case "response.function_call_arguments.done": answerTool(ev); break;
+    case "response.done": youLine = null; break;
+    case "error": say("sys", "Error: " + (ev.error?.message || JSON.stringify(ev))); break;
+  }
+}
+
+async function start() {
+  $("call").disabled = true; status("Connecting…");
+  try {
+    const r = await fetch("/api/voice/session", { method: "POST" });
+    const s = await r.json();
+    if (!r.ok) throw new Error(s.detail || r.statusText);
+    ctx = new AudioContext({ sampleRate: RATE });
+    ws = new WebSocket(s.url, ["realtime", "xai-client-secret." + s.token]);
+    ws.onopen = async () => {
+      send({ type: "session.update", session: s.session });
+      $("text").disabled = $("send").disabled = false;
+      $("call").textContent = "End call"; $("call").disabled = false;
+      try { await startMic(); } catch (e) { say("sys", "Microphone unavailable; you can still type. " + e.message); }
+    };
+    ws.onmessage = (m) => onEvent(JSON.parse(m.data));
+    ws.onclose = () => stop("Call ended");
+    ws.onerror = () => say("sys", "Connection error.");
+  } catch (e) { stop("Could not connect: " + e.message); }
+}
+
+function stop(msg) {
+  stopPlayback();
+  if (micStream) micStream.getTracks().forEach((t) => t.stop());
+  if (ws && ws.readyState <= 1) ws.close();
+  if (ctx) ctx.close();
+  ws = ctx = micStream = micNode = null;
+  $("text").disabled = $("send").disabled = true;
+  $("call").textContent = "Start call"; $("call").disabled = false;
+  status(msg || "Not connected");
+}
+
+$("call").onclick = () => (ws ? stop() : start());
+$("textform").onsubmit = (e) => {
+  e.preventDefault();
+  const t = $("text").value.trim();
+  if (!t) return;
+  say("you", t); $("text").value = "";
+  send({ type: "conversation.item.create", item: { type: "message", role: "user", content: [{ type: "input_text", text: t }] } });
+  send({ type: "response.create" });
+};
+</script>
+</body>
+</html>
