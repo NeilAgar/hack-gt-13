@@ -1,0 +1,75 @@
+{
+  "source": "synthetic",
+  "n_facilities": 80,
+  "n_surveys": 480,
+  "n_forced_legal": 2,
+  "default_capacity": 6,
+  "capacity_rule": "K = round(n_facilities / 12.9) until A supplies monthly standard-survey counts",
+  "month": "2026-10",
+  "hazard_rows": 7280,
+  "rows": [
+    {
+      "capacity": 6,
+      "solver": "lp",
+      "n_selected": 6,
+      "n_forced": 2,
+      "off_hours_share": 0.16666666666666666,
+      "mean_prob": 0.075,
+      "risk_coverage": 0.136369
+    },
+    {
+      "capacity": 7,
+      "solver": "lp",
+      "n_selected": 7,
+      "n_forced": 2,
+      "off_hours_share": 0.14285714285714285,
+      "mean_prob": 0.0875,
+      "risk_coverage": 0.154187
+    },
+    {
+      "capacity": 8,
+      "solver": "lp",
+      "n_selected": 8,
+      "n_forced": 2,
+      "off_hours_share": 0.125,
+      "mean_prob": 0.1,
+      "risk_coverage": 0.171029
+    },
+    {
+      "capacity": 9,
+      "solver": "lp",
+      "n_selected": 9,
+      "n_forced": 2,
+      "off_hours_share": 0.1111111111111111,
+      "mean_prob": 0.1125,
+      "risk_coverage": 0.187102
+    },
+    {
+      "capacity": 10,
+      "solver": "lp",
+      "n_selected": 10,
+      "n_forced": 2,
+      "off_hours_share": 0.1,
+      "mean_prob": 0.125,
+      "risk_coverage": 0.203137
+    },
+    {
+      "capacity": 12,
+      "solver": "lp",
+      "n_selected": 12,
+      "n_forced": 2,
+      "off_hours_share": 0.16666666666666666,
+      "mean_prob": 0.15,
+      "risk_coverage": 0.234735
+    },
+    {
+      "capacity": 14,
+      "solver": "lp",
+      "n_selected": 14,
+      "n_forced": 2,
+      "off_hours_share": 0.14285714285714285,
+      "mean_prob": 0.175,
+      "risk_coverage": 0.265425
+    }
+  ]
+}

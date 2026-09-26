@@ -33,7 +33,10 @@ def risk_weights(facilities: pd.DataFrame, scores: pd.DataFrame) -> pd.Series:
     ij = pd.to_numeric(df.get("ij_citations_3y"), errors="coerce").fillna(0.0)
     weekend = pd.to_numeric(df.get("weekend_dip_pct"), errors="coerce").fillna(0.0)
     weekend_hit = (-weekend).clip(lower=0)
-    risk = residents * (0.25 + score / 10.0 + 0.2 * harm + 0.4 * ij + weekend_hit / 20.0)
+    agency = pd.to_numeric(df.get("agency_share"), errors="coerce").fillna(0.0).clip(lower=0)
+    risk = residents * (
+        0.25 + score / 10.0 + 0.2 * harm + 0.4 * ij + weekend_hit / 20.0 + 2.0 * agency
+    )
     return pd.Series(risk.to_numpy(), index=df["ccn"].to_numpy(), dtype=float)
 
 

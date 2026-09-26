@@ -5,8 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from models.config import AS_OF_DATE, DEFAULT_MONTH, SIM_MONTHS, WEEKS_PER_MONTH
-from models.hazard import cumulative_p, current_lags
+from models.config import AS_OF_DATE, DEFAULT_MONTH, FORCED_WEEKS, SIM_MONTHS, WEEKS_PER_MONTH
+from models.hazard import current_lags
 from models.scheduler import build_schedule, default_capacity, risk_weights
 
 
@@ -20,6 +20,28 @@ def add_month(month: str, steps: int) -> str:
 def _shirk_intensity(p_inspect: float) -> float:
     """Homes cut staff more when they believe inspection risk is low."""
     return float(max(0.0, 1.0 - p_inspect))
+
+
+def _status_quo_belief(weeks_since: int) -> float:
+    """What homes think under the historical 9–15 month window (illustrative)."""
+    w = int(weeks_since)
+    if w >= int(FORCED_WEEKS):
+        return 0.95
+    if 40 <= w <= 60:
+        return 0.50
+    if 35 <= w <= 65:
+        return 0.18
+    return 0.05
+
+
+def _status_quo_actual(weeks_since: int) -> float:
+    """Historical inspectors still bunch in the 40–60 week window."""
+    w = int(weeks_since)
+    if w >= int(FORCED_WEEKS):
+        return 0.95
+    if 40 <= w <= 60:
+        return 0.62
+    return 0.02
 
 
 def simulate(
@@ -39,6 +61,7 @@ def simulate(
     fac["ccn"] = fac["ccn"].astype(str).str.zfill(6)
     ccns = list(fac["ccn"])
     n = len(ccns)
+    _ = h
     k = int(capacity) if capacity is not None else default_capacity(n)
     k = max(1, k)
 
@@ -69,14 +92,18 @@ def simulate(
             if arm == "popquiz":
                 plan = build_schedule(fac, scores, lag_df, month=ym, capacity=k, seed=seed + t)
                 pmap = {row["ccn"]: float(row["prob"]) for row in plan["probs"]}
-                p = np.array([pmap[c] for c in ccns])
+                belief = np.array([pmap[c] for c in ccns])
+                actual = belief
             else:
-                p = np.array([cumulative_p(h, int(max(wi, 0)), n_weeks=4) for wi in w])
+                belief = np.array([_status_quo_belief(int(max(wi, 0))) for wi in w])
+                actual = np.array([_status_quo_actual(int(max(wi, 0))) for wi in w])
 
-            shirk = np.array([_shirk_intensity(pi) for pi in p])
-            inspected = rng.random(n) < np.clip(p, 0.0, 1.0)
-            missed_shirk = shirk * (~inspected).astype(float)
+            p_hat = np.clip(belief, 0.0, 1.0)
+            p_act = np.clip(actual, 0.0, 1.0)
+            shirk = np.array([_shirk_intensity(pi) for pi in p_hat])
+            missed_shirk = shirk * (1.0 - p_act)
             undetected += float((residents * (risk / (risk.mean() + 1e-9)) * missed_shirk).sum())
+            inspected = rng.random(n) < p_act
 
             w = w + WEEKS_PER_MONTH
             w[inspected] = 0.0

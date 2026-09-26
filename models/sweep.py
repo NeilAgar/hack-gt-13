@@ -16,9 +16,9 @@ from models.simulate import simulate
 
 
 def capacity_grid(n: int, n_forced: int) -> list[int]:
-    """K around n/12.9, never below the legal 15.9-month forced count."""
-    mid = default_capacity(n)
-    raw = {max(n_forced, mid + d) for d in (-3, -2, -1, 0, 1, 2, 3, 5)}
+    """K at and above the legal forced count, around n/12.9."""
+    mid = max(default_capacity(n), n_forced, 1)
+    raw = {mid + d for d in (0, 1, 2, 3, 4, 6, 8)}
     return sorted(k for k in raw if k >= 1)
 
 

@@ -62,7 +62,6 @@ def _design(weeks: np.ndarray, months: np.ndarray) -> np.ndarray:
         [
             w,
             w**2 / 100.0,
-            w**3 / 10000.0,
             (w >= 40).astype(float),
             (w >= 49).astype(float),
             (w >= 61).astype(float),
@@ -88,13 +87,21 @@ def fit_hazard(
         return emp, None
 
     grp = pw.groupby("weeks_since_last")["event"].agg(["sum", "count"])
+    prior = float(pw["event"].mean()) if len(pw) else 0.04
+    prior = float(np.clip(prior, 0.01, 0.15))
+    for w in range(max_week + 1):
+        emp[w] = prior
     for w, row in grp.iterrows():
         wi = int(w)
         if 0 <= wi <= max_week:
-            emp[wi] = (row["sum"] + 0.5) / (row["count"] + 1.0)
-    for w in range(max_week + 1):
-        if emp[w] <= 0:
-            emp[w] = 0.005
+            n = float(row["count"])
+            k = float(row["sum"])
+            raw = (k + 0.5) / (n + 1.0)
+            shrink = n / (n + 25.0)
+            emp[wi] = shrink * raw + (1.0 - shrink) * prior
+    kernel = np.array([0.15, 0.2, 0.3, 0.2, 0.15])
+    padded = np.pad(emp, 2, mode="edge")
+    emp = np.convolve(padded, kernel, mode="valid")
     emp = np.clip(emp, 1e-4, 0.85)
 
     model = None
@@ -107,8 +114,11 @@ def fit_hazard(
             grid_w = np.arange(0, max_week + 1)
             grid_m = np.full_like(grid_w, as_of_d.month, dtype=float)
             pred = model.predict_proba(_design(grid_w, grid_m))[:, 1]
-            # Blend so the 40–60 week spike in the generating process is visible.
-            emp = np.clip(0.65 * emp + 0.35 * pred, 1e-4, 0.9)
+            pred = np.clip(pred, 1e-4, 0.4)
+            # Logit is a smoother; keep empirical spike in 40–60 weeks.
+            blend = 0.75 * emp + 0.25 * pred
+            blend[70:] = emp[70:]
+            emp = np.clip(blend, 1e-4, 0.85)
     except Exception:
         model = None
     emp[0] = 0.0

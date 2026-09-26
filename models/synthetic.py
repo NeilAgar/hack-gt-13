@@ -97,16 +97,21 @@ def build_synthetic(n_homes: int = SYNTHETIC_N_HOMES, seed: int = SYNTHETIC_SEED
                     "ci_high": rec.get("ci_high", score + 3),
                     "surge_pct": max(score, 0) + 4,
                     "weekend_dip_pct": -4.0 if score >= 5 else -1.0,
+                    "agency_share": 0.22 if score >= 7 else 0.08,
                     "label": rec.get("label", "Watch"),
                     "trophy_flag": bool(rec.get("trophy_flag", False)),
                 }
             )
 
-    extra = max(0, n_homes)
-    for i in range(extra):
+    extra_needed = max(0, n_homes - len(rows_fac))
+    made = 0
+    i = 0
+    while made < extra_needed:
         ccn = _pad_ccn(110000 + i)
+        i += 1
         if ccn in fixture_ccns:
             continue
+        made += 1
         residents = float(rng.integers(40, 180))
         score = float(np.clip(rng.normal(3.0, 4.5), -6, 18))
         harm = int(rng.integers(0, 4))
@@ -139,6 +144,7 @@ def build_synthetic(n_homes: int = SYNTHETIC_N_HOMES, seed: int = SYNTHETIC_SEED
                 "ci_high": score + abs(rng.normal(3, 1)),
                 "surge_pct": max(score, 0) + float(rng.uniform(0, 6)),
                 "weekend_dip_pct": float(rng.uniform(-12, 2)),
+                "agency_share": float(np.clip(rng.beta(2, 10), 0, 0.6)),
                 "label": "Low" if score >= 6 else ("Watch" if score >= 1.5 else "High"),
                 "trophy_flag": False,
             }
@@ -155,8 +161,14 @@ def build_synthetic(n_homes: int = SYNTHETIC_N_HOMES, seed: int = SYNTHETIC_SEED
             current_lag = FIXTURE_LAGS[ccn]
         else:
             current_lag = int(_draw_lag_weeks(rng, 1)[0])
-            if rng.random() < 0.08:
+            if current_lag >= int(FORCED_WEEKS):
+                current_lag = int(rng.integers(28, 58))
+            roll = rng.random()
+            if roll < 0.025:
                 current_lag = int(FORCED_WEEKS) + int(rng.integers(0, 8))
+            elif roll < 0.14:
+                # Same calendar month as as_of (scheduler must ban unless forced).
+                current_lag = 52
 
         cursor = as_of - timedelta(weeks=int(current_lag))
         dates = [cursor]

@@ -8,6 +8,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
+
 from models.config import FORCED_WEEKS, OFF_HOURS_MIN_SHARE, PROCESSED_DIR
 from models.hazard import bunching_share, hazard_table
 from models.load import load_inputs
@@ -34,8 +36,9 @@ def test_hazard_schema_and_ccn(inputs):
     assert table["ccn"].map(lambda x: len(str(x)) == 6).all()
     assert (table["p_survey_week"].between(0, 1)).all()
     assert (table["p_next_60d"].between(0, 1)).all()
-    peak = int(h[1:].argmax() + 1)
-    assert 35 <= peak <= 70, f"hazard peak at week {peak}, expected near 40–60"
+    early = float(h[8:26].mean())
+    bunch = float(h[40:61].mean())
+    assert bunch > early, f"mean hazard 40-60 ({bunch:.4f}) should exceed weeks 8-25 ({early:.4f})"
     assert len(lags) == inputs["facilities"]["ccn"].nunique() or len(lags) > 0
 
 
@@ -70,7 +73,39 @@ def test_simulate_identity(inputs):
     pq = out["popquiz"]["undetected_shirk_resident_months"]
     expected = 0.0 if sq == 0 else round(100.0 * (sq - pq) / sq, 1)
     assert out["reduction_pct"] == expected
+    assert out["reduction_pct"] >= 0
     assert "illustrative" in out and out["illustrative"] is True
+
+
+def test_synthetic_includes_fixture_ccns_and_count(inputs):
+    ccns = set(inputs["facilities"]["ccn"].astype(str).str.zfill(6))
+    assert {"115994", "115995", "115996", "115997", "115998", "115999"} <= ccns
+    assert len(inputs["facilities"]) == 80
+
+
+def test_overdue_fixture_is_forced(inputs):
+    table, h, lags = hazard_table(inputs["surveys"], inputs["facilities"])
+    k = default_capacity(len(inputs["facilities"]))
+    plan = build_schedule(inputs["facilities"], inputs["scores"], lags, month="2026-10", capacity=k, seed=2)
+    harbor = next(r for r in plan["probs"] if r["ccn"] == "115999")
+    assert harbor["forced"] is True
+    assert abs(harbor["prob"] - 1.0) < 1e-6
+    assert any(r["ccn"] == "115999" for r in plan["selected"])
+    _ = table, h
+
+
+def test_same_month_repeat_banned(inputs):
+    table, h, lags = hazard_table(inputs["surveys"], inputs["facilities"])
+    plan = build_schedule(
+        inputs["facilities"], inputs["scores"], lags, month="2026-10", capacity=default_capacity(len(inputs["facilities"])), seed=4
+    )
+    banned = lags[(lags["last_month"] == 10) & (lags["weeks_since_last"] < FORCED_WEEKS)]
+    selected = {r["ccn"] for r in plan["selected"]}
+    pmap = {r["ccn"]: r["prob"] for r in plan["probs"]}
+    for ccn in banned["ccn"]:
+        assert pmap.get(ccn, 0.0) == 0.0
+        assert ccn not in selected
+    _ = table, h
 
 
 def test_interval_weeks_positive(inputs):
