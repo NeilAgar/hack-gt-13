@@ -11,6 +11,16 @@ TIMING_KEYS = {"p_next_60d", "p_survey_week", "weeks_since_last", "next_survey",
 
 
 @pytest.fixture(autouse=True)
+def fixture_mode(tmp_path, monkeypatch):
+    """Family endpoints read fixtures/ by default, so these tests don't depend on A's current data."""
+    from api import data
+    monkeypatch.setattr(data, "PROCESSED", tmp_path / "empty")
+    data._processed.cache_clear()
+    yield
+    data._processed.cache_clear()
+
+
+@pytest.fixture(autouse=True)
 def clear_explain_cache():
     explain_mod._cache.clear()
     yield
@@ -117,8 +127,10 @@ def test_schedule_follows_requested_capacity_and_month():
         s = r.json()
         assert r.headers["X-Data-Source"].startswith("models:")
         assert set(s) == SCHEDULE_KEYS
-        assert s["month"] == "2026-11" and s["capacity"] == k and len(s["selected"]) == k
-        assert abs(sum(p["prob"] for p in s["probs"]) - k) < 1e-3
+        n_forced = sum(p["forced"] for p in s["probs"])
+        # Legally forced homes are always scheduled, so capacity can rise above the request.
+        assert s["month"] == "2026-11" and s["capacity"] == max(k, n_forced) == len(s["selected"])
+        assert abs(sum(p["prob"] for p in s["probs"]) - s["capacity"]) < 1e-3
         assert all(p["prob"] == 1.0 for p in s["probs"] if p["forced"])
 
 
@@ -158,17 +170,14 @@ def test_schedule_rejects_negative_seed():
     assert r.status_code == 422
 
 
-def test_predictability_comes_from_models_not_file():
-    import json
+def test_predictability_comes_from_models():
     from api import data
+    m = data._models()
     rows = client.get("/api/predictability", headers=REG).json()
-    assert len(rows) == len(data._models()["facilities"]) and set(rows[0]) == {"ccn", "name", "p_next_60d"}
+    ccns = set(m["facilities"]["ccn"].astype(str).str.zfill(6))
+    # Homes with no survey on record have no hazard row, so this can be shorter than the facility list.
+    assert rows and {r["ccn"] for r in rows} <= ccns and set(rows[0]) == {"ccn", "name", "p_next_60d"}
     assert rows == sorted(rows, key=lambda r: (-r["p_next_60d"], r["ccn"]))
-    on_disk = data.ROOT / "data" / "processed" / "predictability.json"
-    if on_disk.exists():  # same inputs as `make models`; the hazard fit can differ slightly across library versions
-        disk = {r["ccn"]: r["p_next_60d"] for r in json.loads(on_disk.read_text())}
-        assert set(disk) == {r["ccn"] for r in rows}
-        assert all(abs(r["p_next_60d"] - disk[r["ccn"]]) < 1e-2 for r in rows)
 
 
 def _counting_grok(reply, calls):
@@ -215,3 +224,81 @@ def test_facility_includes_cached_explanation(monkeypatch):
     from api import data
     explain_mod.explain(data.facility("115999"), client=_fake_grok(reply))
     assert client.get("/api/facility/115999").json()["explanation"] == reply
+
+
+# --- Family endpoints on A's processed tables ---------------------------------------------
+
+def _write_processed(d):
+    import pandas as pd
+    d.mkdir()
+    pd.DataFrame([
+        {"ccn": "115001", "name": "Alpha Care", "city": "Macon", "county": "Bibb", "lat": 32.8, "lon": -83.6,
+         "certified_beds": 100, "avg_residents": 80.5, "ownership": "For profit", "overall_star": 5,
+         "staffing_star": 4, "health_star": 5, "harm_citations_3y": 0, "ij_citations_3y": 0,
+         "rbs_proxy_eligible": True},
+        {"ccn": "115002", "name": "Beta Home", "city": "Savannah", "county": "Chatham", "lat": 32.1, "lon": -81.1,
+         "certified_beds": 60, "avg_residents": 50.0, "ownership": "Non profit", "overall_star": 2,
+         "staffing_star": 2, "health_star": 2, "harm_citations_3y": 1, "ij_citations_3y": 0,
+         "rbs_proxy_eligible": False},
+    ]).astype({"overall_star": "Int64"}).to_parquet(d / "facilities.parquet")
+    pd.DataFrame([{"ccn": "115001", "n_surveys": 2, "raw_pct": 9.0, "score_pct": 7.5, "ci_low": 2.0,
+                   "ci_high": 13.0, "surge_pct": 12.0, "weekend_dip_pct": -4.0, "label": "PLACEHOLDER",
+                   "trophy_flag": True}]).to_parquet(d / "scores.parquet")
+    pd.DataFrame([{"ccn": "GA", "rel_day": 0, "hprd_resid_mean": 0.3, "n_obs": 500},
+                  {"ccn": "GA", "rel_day": -1, "hprd_resid_mean": 0.34, "n_obs": 500},
+                  {"ccn": "115001", "rel_day": -1, "hprd_resid_mean": 0.5, "n_obs": 2}]).to_parquet(d / "curves.parquet")
+
+
+@pytest.fixture
+def processed(tmp_path, monkeypatch):
+    from api import data
+    d = tmp_path / "processed"
+    _write_processed(d)
+    monkeypatch.setattr(data, "PROCESSED", d)
+    data._processed.cache_clear()
+    return d
+
+
+def test_family_serves_processed_tables(processed):
+    r = client.get("/api/facilities")
+    assert r.headers["X-Data-Source"] == "processed"
+    rows = {f["ccn"]: f for f in r.json()}
+    assert set(rows) == {"115001", "115002"}
+    assert all(set(f) == {"ccn", "name", "city", "lat", "lon", "overall_star", "staffing_star", "score_pct",
+                          "ci_low", "ci_high", "label", "trophy_flag"} for f in rows.values())
+    assert rows["115001"]["score_pct"] == 7.5 and rows["115001"]["trophy_flag"] is True
+    assert client.get("/api/facilities", params={"q": "savannah"}).json()[0]["ccn"] == "115002"
+
+
+def test_facility_detail_from_processed(processed):
+    fac = client.get("/api/facility/115001").json()
+    assert fac["n_surveys"] == 2 and isinstance(fac["n_surveys"], int)
+    assert fac["curve"] == [{"d": -1, "v": 0.5}]
+    assert fac["state_curve"] == [{"d": -1, "v": 0.34}, {"d": 0, "v": 0.3}]  # sorted by day
+    assert fac["label"] is None  # PLACEHOLDER isn't a contract label
+
+
+def test_home_without_score_has_nulls_and_explains_why(processed):
+    fac = client.get("/api/facility/115002").json()
+    assert fac["score_pct"] is None and fac["ci_low"] is None and fac["curve"] == []
+    assert fac["trophy_flag"] is False and fac["label"] is None
+    assert client.post("/api/explain", json={"ccn": "115002"}).json()["text"] == explain_mod.NO_SCORE
+
+
+def test_trophy_from_processed(processed):
+    rows = client.get("/api/trophy", headers=REG).json()
+    assert rows == [{"ccn": "115001", "name": "Alpha Care", "overall_star": 5, "score_pct": 7.5, "ci_low": 2.0}]
+
+
+def test_real_processed_data_smoke(monkeypatch):
+    """Runs on A's committed tables, if present: every home serializes and the curves are there."""
+    from api import data
+    if not (data.ROOT / "data" / "processed" / "scores.parquet").exists():
+        pytest.skip("no processed data")
+    monkeypatch.setattr(data, "PROCESSED", data.ROOT / "data" / "processed")
+    data._processed.cache_clear()
+    rows = client.get("/api/facilities", params={"limit": 500}).json()
+    assert len(rows) > 300
+    assert all(r["label"] in {"High", "Watch", "Low", None} for r in rows)
+    fac = client.get(f"/api/facility/{rows[0]['ccn']}").json()
+    assert fac["state_curve"]

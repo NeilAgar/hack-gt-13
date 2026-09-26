@@ -93,8 +93,14 @@ def _ask_grok(facts, key, client):
     return text if passes_guardrails(text, facts) else None
 
 
+NO_SCORE = ("There are not enough inspections with staffing data to score this home yet. "
+            "Staffing data is self-reported by the facility through PBJ.")
+
+
 def explain(fac, client=None):
     facts = facts_for(fac)
+    if any(facts.get(k) is None for k in ("score_pct", "ci_low", "ci_high")):
+        return NO_SCORE
     k = _cache_key(facts)
     if k in _cache:
         return _cache[k]
