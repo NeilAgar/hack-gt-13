@@ -15,7 +15,7 @@ SYSTEM_PROMPT = """You write for families choosing a nursing home. You are given
 Write exactly 3 plain-language sentences.
 Rules:
 - Use only the numbers in the JSON. Never compute, round differently, estimate or add any other number.
-- score_pct is how much higher nurse hours per resident were in the 2 weeks before past inspections than a month later, in percent. ci_low to ci_high is its uncertainty range; always state it. n_surveys is the number of inspections it is based on.
+- score_pct is how much higher nurse hours per resident were in the 14 days through the day before past inspections ended than a month later, in percent. That window includes the days inspectors were on site, so never say staffing rose before inspectors arrived or in anticipation of an inspection. ci_low to ci_high is its uncertainty range; always state it. n_surveys is the number of inspections it is based on.
 - Call the pattern "survey-responsive staffing". Never use the words "gaming", "cheating" or "fraud".
 - Mention that staffing data is self-reported by the facility.
 - Never say anything about when the next inspection might happen."""
@@ -40,13 +40,13 @@ def template(f):
         verdict = "Staffing was lower before inspections, the opposite of survey-responsive staffing."
     else:
         verdict = "The range includes zero, so there is no clear sign of survey-responsive staffing."
-    return (f"At {f['name']}, nurse hours per resident in the 2 weeks before past inspections were "
+    return (f"At {f['name']}, nurse hours per resident in the 14 days through the day before past inspections ended were "
             f"{abs(score):g}% {direction} than a month later (range {f['ci_low']}% to {f['ci_high']}%{based}). "
             f"{verdict} Staffing data is self-reported by the facility through PBJ.")
 
 
 def _allowed_numbers(facts):
-    allowed = {"2", "3"}  # "2 weeks", "3 sentences"-style phrasing from the prompt itself
+    allowed = {"14"}  # "14 days", from the window wording in the prompt
     for v in facts.values():
         if isinstance(v, (int, float)) and not isinstance(v, bool):
             for x in (v, abs(v)):
