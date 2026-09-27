@@ -156,7 +156,7 @@ update each time you click Generate.
 | `http://localhost:3000/live` | Call Clock live view (needs the hardware or its simulator) |
 | `http://localhost:8000/evidence` | Statewide evidence: event-study curve vs placebo |
 | `http://localhost:8000/docs` | Interactive API docs (FastAPI) |
-| `http://localhost:8000/voice` | Grok voice line (experimental, not linked; needs `XAI_API_KEY`) |
+| `http://localhost:8000/voice` | Grok voice line, linked as **Ask Grok** in the header (needs `XAI_API_KEY`) |
 
 ## Run it
 

@@ -85,6 +85,8 @@ a:hover { color: var(--teal-deep); }
 }
 
 
+.nav { display: flex; gap: 1rem; font-size: 0.95rem; }
+
 main { padding: 1.5rem 0 2.5rem; }
 
 h1, h2, h3, td, th, .wrap-name {
