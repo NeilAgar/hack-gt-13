@@ -104,25 +104,6 @@ export type ScheduleResponse = {
   probs: ScheduleProb[];
 };
 
-/** GET /simulate */
-export type SimulateResponse = {
-  months: number;
-  status_quo: {
-    undetected_shirk_resident_months: number;
-  };
-  popquiz: {
-    undetected_shirk_resident_months: number;
-  };
-  reduction_pct: number;
-};
-
-/** GET /predictability — regulator only. Never render this in family mode. */
-export type PredictabilityRow = {
-  ccn: string;
-  name: string;
-  p_next_60d: number;
-};
-
 /** GET /trophy */
 export type TrophyRow = {
   ccn: string;

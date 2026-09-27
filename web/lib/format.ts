@@ -148,23 +148,6 @@ export function scoreSummary(
   return `${formatPct(scorePct as number)}% (range ${formatRange(ciLow as number, ciHigh as number)})`;
 }
 
-/**
- * The simulation holds staffing behavior fixed and only changes who is inspected,
- * so a few percent is the short-run result. Show that percent next to the counts.
- */
-export function reductionCaption(reductionPct: number | null | undefined): string | null {
-  if (!Number.isFinite(reductionPct)) return null;
-  const pct = reductionPct as number;
-  const amount = `${formatPct(Math.abs(pct))}%`;
-  if (pct < 0) {
-    return `This capacity leaves ${amount} more undetected shirk resident-months than the status quo. The gap turns the other way when the monthly budget is closer to a usual survey count.`;
-  }
-  if (pct < 10) {
-    return `${amount} fewer undetected shirk resident-months. That is a small short-run gap: homes in this model still staff to the historical 40–60 week window, and only which homes are inspected changes.`;
-  }
-  return `${amount} fewer undetected shirk resident-months than the status quo, at the same inspector budget. Homes in this model still staff to the historical 40–60 week window.`;
-}
-
 export function mergeCurves(facility: CurvePoint[], state: CurvePoint[]) {
   const days = Array.from(
     new Set([...facility.map((point) => point.d), ...state.map((point) => point.d)]),

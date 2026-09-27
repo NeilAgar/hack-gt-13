@@ -269,7 +269,6 @@ th { font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; colo
 .schedule-form input[type="month"] { width: 11rem; }
 .schedule-form input[type="range"] { width: min(16rem, 100%); accent-color: var(--teal); }
 .capacity-control { display: flex; align-items: center; gap: 0.7rem; }
-.chart-short { height: 280px; }
 .table-scroll { max-height: 28rem; overflow: auto; }
 /* Keep column titles visible while scrolling a long table. */
 .table-scroll thead th { position: sticky; top: 0; z-index: 1; background: var(--card); }

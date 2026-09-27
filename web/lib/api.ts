@@ -5,10 +5,8 @@ import type {
   ExplainResponse,
   FacilityDetail,
   FacilitySummary,
-  PredictabilityRow,
   ScheduleRequest,
   ScheduleResponse,
-  SimulateResponse,
   TrophyRow,
 } from "./types";
 
@@ -182,22 +180,7 @@ export async function postSchedule(body: ScheduleRequest): Promise<ScheduleRespo
   );
 }
 
-export async function getSimulate(capacity: number): Promise<SimulateResponse> {
-  const params = new URLSearchParams({ capacity: String(capacity) });
-  return withFallback(
-    () => request<SimulateResponse>(`/simulate?${params.toString()}`, undefined, true),
-    () => readFixture<SimulateResponse>("simulate_sample.json"),
-  );
-}
-
 /** Regulator only. Do not call this from family pages. */
-export async function getPredictability(): Promise<PredictabilityRow[]> {
-  return withFallback(
-    () => request<PredictabilityRow[]>("/predictability", undefined, true),
-    () => readFixture<PredictabilityRow[]>("predictability.json"),
-  );
-}
-
 export async function getTrophy(): Promise<TrophyRow[]> {
   return withFallback(
     () => request<TrophyRow[]>("/trophy", undefined, true),

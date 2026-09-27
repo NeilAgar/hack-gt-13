@@ -9,8 +9,6 @@ import {
   explainFacility,
   getFacilities,
   getFacility,
-  getPredictability,
-  getSimulate,
   getTrophy,
   postSchedule,
 } from "../lib/api.ts";
@@ -21,12 +19,11 @@ import {
   RATING_COLOR,
   ratingColor,
   UNRATED_COLOR,
-  reductionCaption,
   scoreHeadline,
   scoreSummary,
   UNSCORED_COPY,
 } from "../lib/format.ts";
-import { clampCapacity, overdueCount, topPredictability, visibleProbabilities } from "../lib/regulator.ts";
+import { clampCapacity, overdueCount, visibleProbabilities } from "../lib/regulator.ts";
 import { citationSignal, riskScore } from "../lib/risk.ts";
 
 const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -104,15 +101,6 @@ describe("fixture fallback", () => {
     assert.ok(schedule.probs.length >= schedule.selected.length);
     const probSum = schedule.probs.reduce((sum, row) => sum + row.prob, 0);
     assert.ok(Math.abs(probSum - schedule.capacity) < 0.01);
-
-    const sim = await getSimulate(3);
-    assert.equal(sim.months, 36);
-    assert.equal(typeof sim.status_quo.undetected_shirk_resident_months, "number");
-    assert.equal(typeof sim.popquiz.undetected_shirk_resident_months, "number");
-    assert.equal(typeof sim.reduction_pct, "number");
-
-    const hazard = await getPredictability();
-    assert.ok(hazard.every((row) => typeof row.p_next_60d === "number"));
   });
 });
 
@@ -158,21 +146,6 @@ describe("regulator header", () => {
           );
           return;
         }
-        if (url.startsWith("/api/simulate")) {
-          res.end(
-            JSON.stringify({
-              months: 36,
-              status_quo: { undetected_shirk_resident_months: 1 },
-              popquiz: { undetected_shirk_resident_months: 1 },
-              reduction_pct: 0,
-            }),
-          );
-          return;
-        }
-        if (url === "/api/predictability") {
-          res.end("[]");
-          return;
-        }
         if (url === "/api/trophy") {
           res.end("[]");
           return;
@@ -199,8 +172,6 @@ describe("regulator header", () => {
     await getFacility("115999");
     await explainFacility("115999");
     await postSchedule({ month: "2026-10", capacity: 3, seed: 1 });
-    await getSimulate(3);
-    await getPredictability();
     await getTrophy();
 
     const byPath = (prefix: string) => seen.find((call) => call.url.startsWith(prefix));
@@ -208,8 +179,6 @@ describe("regulator header", () => {
     assert.equal(byPath("/api/facility/")?.role, undefined);
     assert.equal(byPath("/api/explain")?.role, undefined);
     assert.equal(byPath("/api/schedule")?.role, "regulator");
-    assert.equal(byPath("/api/simulate")?.role, "regulator");
-    assert.equal(byPath("/api/predictability")?.role, "regulator");
     assert.equal(byPath("/api/trophy")?.role, "regulator");
 
     const schedule = byPath("/api/schedule");
@@ -235,7 +204,7 @@ describe("regulator capacity", () => {
 });
 
 describe("regulator lists", () => {
-  test("hides zero probabilities and keeps the top predictability scores", () => {
+  test("hides zero probabilities", () => {
     const probs = [
       { ccn: "000001", prob: 0, forced: false },
       { ccn: "000002", prob: 0.2, forced: false },
@@ -246,19 +215,9 @@ describe("regulator lists", () => {
       ["000003", "000002"],
     );
     assert.equal(visibleProbabilities(probs, true).at(-1)?.prob, 0);
-
-    const rows = Array.from({ length: 25 }, (_, index) => ({
-      ccn: String(index).padStart(6, "0"),
-      name: `Home ${index}`,
-      p_next_60d: index / 100,
-    }));
-    const top = topPredictability(rows);
-    assert.equal(top.length, 20);
-    assert.equal(top[0]?.ccn, "000024");
-    assert.ok(top[0].p_next_60d > top[19].p_next_60d);
   });
 });
-describe("scores and simulation copy", () => {
+describe("scores copy", () => {
   test("null scores and labels are not filled in", () => {
     assert.equal(isScored(null, null, null), false);
     assert.equal(scoreHeadline(null, 0, 0, null), null);
@@ -283,15 +242,6 @@ describe("scores and simulation copy", () => {
     assert.doesNotMatch(headline, /2 weeks before/);
   });
 
-  test("a small simulation reduction stays a short-run gap", () => {
-    const caption = reductionCaption(3.5);
-    assert.ok(caption);
-    assert.match(caption, /3\.5%/);
-    assert.match(caption, /small short-run gap/);
-    assert.match(caption, /40–60 week window/);
-    assert.match(reductionCaption(-16) ?? "", /more undetected shirk/);
-    assert.doesNotMatch(reductionCaption(43.9) ?? "", /small short-run gap/);
-  });
 });
 
 describe("family copy", () => {
@@ -319,9 +269,6 @@ describe("family copy", () => {
     const surfaceText = familySurfaces.map((file) => readFileSync(file, "utf8")).join("\n");
     assert.doesNotMatch(surfaceText, /p_next_60d|getPredictability|PredictabilityPanel/);
     assert.match(text, /not enough inspections/);
-    assert.match(text, /Illustrative model/);
-    assert.match(text, /undetected shirk resident-months/);
-    assert.match(text, /never shown to families/);
   });
 });
 
