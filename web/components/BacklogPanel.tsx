@@ -1,0 +1,199 @@
+"use client";
+
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  LabelList,
+  Legend,
+  ReferenceLine,
+  ResponsiveContainer,
+  Scatter,
+  ScatterChart,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+
+import { BUCKETS, monthsSince, nextMonthOverdue, scatterPoints, summarizeBacklog } from "@/lib/backlog";
+import type { BacklogResponse, ScheduleResponse } from "@/lib/types";
+
+const AXIS_TICK = { fill: "#5e584e", fontSize: 12 };
+const GRID = "#e3d7c6";
+
+function pct(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
+/**
+ * Inspection backlog: how long each Georgia home has gone since its last standard inspection, and its
+ * chance of being picked under the current plan. Regulator only; uses past inspection dates.
+ */
+export function BacklogPanel({
+  backlog,
+  schedule,
+  names,
+}: {
+  backlog: BacklogResponse;
+  schedule: ScheduleResponse;
+  names: Record<string, string>;
+}) {
+  const homes = backlog.homes;
+  if (homes.length === 0) return null;
+
+  const buckets = summarizeBacklog(homes, schedule.probs);
+  const next = nextMonthOverdue(homes, schedule.probs, backlog.forced_weeks);
+  const overdueNow = homes.filter((home) => home.forced).length;
+  const points = scatterPoints(homes, schedule.probs);
+  const limit = Math.round(monthsSince(backlog.forced_weeks) * 10) / 10;
+  const maxMonths = Math.max(limit + 2, ...points.map((point) => point.months));
+
+  return (
+    <div className="backlog" aria-labelledby="backlog-heading">
+      <h3 id="backlog-heading">Inspection backlog</h3>
+      <p className="meta">
+        Months since each home&apos;s last standard inspection, as of {backlog.as_of}, and its chance of being
+        picked in the {schedule.month} plan ({schedule.capacity} inspections). Federal rules allow at most 15.9
+        months between standard inspections.
+      </p>
+
+      <div className="stat-row">
+        <div className="stat">
+          <b>{overdueNow}</b>
+          <span>overdue now (always picked)</span>
+        </div>
+        <div className="stat">
+          <b>{next.crossing}</b>
+          <span>cross 15.9 months within a month</span>
+        </div>
+        <div className="stat">
+          <b>≈ {Math.round(next.expectedOverdue)}</b>
+          <span>of those expected to be overdue next month at this capacity</span>
+        </div>
+      </div>
+
+      <div className="backlog-charts">
+        <figure className="backlog-figure">
+          <figcaption>Homes by time since last inspection</figcaption>
+          <div className="chart-wrap" style={{ height: 260 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={buckets} margin={{ top: 20, right: 8, left: 0, bottom: 4 }} barCategoryGap="22%">
+                <CartesianGrid stroke={GRID} vertical={false} />
+                <XAxis dataKey="label" tick={AXIS_TICK} interval={0} />
+                <YAxis tick={AXIS_TICK} width={36} allowDecimals={false} />
+                <Tooltip
+                  cursor={{ fill: "rgba(0,0,0,0.04)" }}
+                  formatter={(value, _name, item) => {
+                    const row = item?.payload as (typeof buckets)[number] | undefined;
+                    return [
+                      `${value} homes · avg chance ${row ? pct(row.avgChance) : "—"} · ≈ ${row ? row.expectedPicks.toFixed(1) : "—"} inspections`,
+                      "",
+                    ];
+                  }}
+                  separator=""
+                />
+                <Bar dataKey="homes" name="Homes" radius={[4, 4, 0, 0]}>
+                  {buckets.map((bucket) => (
+                    <Cell key={bucket.id} fill={bucket.color} />
+                  ))}
+                  <LabelList dataKey="homes" position="top" fill="#1b242c" fontSize={12} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </figure>
+
+        <figure className="backlog-figure">
+          <figcaption>Chance of being picked this month, each dot one home</figcaption>
+          <div className="chart-wrap" style={{ height: 260 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <ScatterChart margin={{ top: 14, right: 12, left: 0, bottom: 18 }}>
+                <CartesianGrid stroke={GRID} />
+                <XAxis
+                  type="number"
+                  dataKey="months"
+                  domain={[0, Math.ceil(maxMonths)]}
+                  tick={AXIS_TICK}
+                  label={{ value: "Months since last inspection", position: "insideBottom", offset: -8, fill: "#5e584e", fontSize: 12 }}
+                />
+                <YAxis
+                  type="number"
+                  dataKey="chance"
+                  domain={[0, 100]}
+                  ticks={[0, 25, 50, 75, 100]}
+                  tickFormatter={(value: number) => `${value}%`}
+                  tick={AXIS_TICK}
+                  width={44}
+                />
+                <ReferenceLine
+                  x={limit}
+                  stroke="#1b242c"
+                  strokeDasharray="4 4"
+                  label={{ value: "15.9-month limit", position: "insideTopLeft", fill: "#1b242c", fontSize: 11 }}
+                />
+                <Tooltip
+                  cursor={{ strokeDasharray: "3 3" }}
+                  content={({ active, payload }) => {
+                    const point = active ? (payload?.[0]?.payload as (typeof points)[number] | undefined) : undefined;
+                    if (!point) return null;
+                    return (
+                      <div className="chart-tooltip">
+                        <strong>{names[point.ccn] ?? point.ccn}</strong>
+                        <br />
+                        {point.months} months since last inspection
+                        <br />
+                        {point.chance}% chance of being picked
+                      </div>
+                    );
+                  }}
+                />
+                <Legend verticalAlign="top" height={40} iconType="circle" iconSize={10} wrapperStyle={{ fontSize: 12, pointerEvents: "none" }} />
+                {BUCKETS.map((bucket) => (
+                  <Scatter
+                    key={bucket.id}
+                    name={bucket.label}
+                    data={points.filter((point) => point.bucket === bucket.id)}
+                    fill={bucket.color}
+                    stroke="#fffdf9"
+                    strokeWidth={1}
+                    isAnimationActive={false}
+                  />
+                ))}
+              </ScatterChart>
+            </ResponsiveContainer>
+          </div>
+        </figure>
+      </div>
+
+      <div className="table-scroll">
+        <table className="compact-table">
+          <thead>
+            <tr>
+              <th>Since last inspection</th>
+              <th>Homes</th>
+              <th>Average chance this month</th>
+              <th>Expected inspections</th>
+            </tr>
+          </thead>
+          <tbody>
+            {buckets.map((bucket) => (
+              <tr key={bucket.id}>
+                <td>
+                  <span className="swatch" style={{ background: bucket.color }} aria-hidden /> {bucket.label}
+                </td>
+                <td>{bucket.homes}</td>
+                <td>{pct(bucket.avgChance)}</td>
+                <td>{bucket.expectedPicks.toFixed(1)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="note">
+        Expected inspections add up each home&apos;s chance, so they sum to the plan&apos;s capacity. Past inspection
+        dates only; this view is never shown to families.
+      </p>
+    </div>
+  );
+}

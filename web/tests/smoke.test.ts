@@ -25,6 +25,7 @@ import {
 } from "../lib/format.ts";
 import { clampCapacity, overdueCount, visibleProbabilities } from "../lib/regulator.ts";
 import { citationSignal, riskScore } from "../lib/risk.ts";
+import { bucketOf, nextMonthOverdue, summarizeBacklog, WEEKS_PER_MONTH } from "../lib/backlog.ts";
 
 const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -257,7 +258,7 @@ describe("family copy", () => {
     const family = ["page.tsx", path.join("facility", "[ccn]", "page.tsx")]
       .map((name) => readFileSync(path.join(webRoot, "app", name), "utf8"))
       .join("\n");
-    assert.doesNotMatch(family, /p_next_60d|predictability|X-Demo-Role|getPredictability/);
+    assert.doesNotMatch(family, /p_next_60d|predictability|X-Demo-Role|getPredictability|getBacklog|weeks_since_last/);
 
     const familySurfaces = [
       path.join(webRoot, "app", "page.tsx"),
@@ -267,7 +268,7 @@ describe("family copy", () => {
       path.join(webRoot, "components", "StaffingChart.tsx"),
     ];
     const surfaceText = familySurfaces.map((file) => readFileSync(file, "utf8")).join("\n");
-    assert.doesNotMatch(surfaceText, /p_next_60d|getPredictability|PredictabilityPanel/);
+    assert.doesNotMatch(surfaceText, /p_next_60d|getPredictability|PredictabilityPanel|getBacklog|weeks_since_last|BacklogPanel/);
     assert.match(text, /not enough inspections/);
   });
 });
@@ -279,5 +280,39 @@ describe("risk score", () => {
     // Missing residents default to 80, missing ranks to 0.5, citations cap at 1.
     assert.ok(Math.abs(riskScore({ ij: 20 }) - 80 * (0.25 + 0.5 + 1 + 0.125)) < 1e-9);
     assert.equal(citationSignal(0, 20), 1);
+  });
+});
+
+describe("inspection backlog", () => {
+  const homes = [
+    { ccn: "000001", weeks_since_last: 10, forced: false }, // ~2.3 months
+    { ccn: "000002", weeks_since_last: 40, forced: false }, // ~9.2 months
+    { ccn: "000003", weeks_since_last: 66, forced: false }, // ~15.2 months, crosses within a month
+    { ccn: "000004", weeks_since_last: 75, forced: true },
+  ];
+  const probs = [
+    { ccn: "000001", prob: 0.1, forced: false },
+    { ccn: "000002", prob: 0.3, forced: false },
+    { ccn: "000003", prob: 0.6, forced: false },
+    { ccn: "000004", prob: 1, forced: true },
+  ];
+
+  test("buckets by months since the last inspection, overdue from the scheduler's flag", () => {
+    assert.deepEqual(homes.map(bucketOf), ["recent", "mid", "due", "overdue"]);
+    assert.equal(bucketOf({ ccn: "x", weeks_since_last: Math.ceil(6 * WEEKS_PER_MONTH), forced: false }), "mid");
+  });
+
+  test("expected inspections add up the chances", () => {
+    const rows = summarizeBacklog(homes, probs);
+    assert.deepEqual(rows.map((row) => row.homes), [1, 1, 1, 1]);
+    const total = rows.reduce((sum, row) => sum + row.expectedPicks, 0);
+    assert.ok(Math.abs(total - 2) < 1e-9);
+    assert.equal(rows[3].avgChance, 1);
+  });
+
+  test("next month's overdue count is the crossing homes not picked this month", () => {
+    const next = nextMonthOverdue(homes, probs, 69.1);
+    assert.equal(next.crossing, 1);
+    assert.ok(Math.abs(next.expectedOverdue - 0.4) < 1e-9);
   });
 });

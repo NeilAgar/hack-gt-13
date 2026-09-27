@@ -105,6 +105,19 @@ export type ScheduleResponse = {
 };
 
 /** GET /trophy */
+/** GET /backlog (v1.3) — regulator only: weeks since each home's last standard inspection. */
+export type BacklogHome = {
+  ccn: string;
+  weeks_since_last: number;
+  forced: boolean;
+};
+
+export type BacklogResponse = {
+  as_of: string;
+  forced_weeks: number;
+  homes: BacklogHome[];
+};
+
 export type TrophyRow = {
   ccn: string;
   name: string;

@@ -197,6 +197,20 @@ def predictability():
     return sorted(rows, key=lambda r: (-r["p_next_60d"], r["ccn"]))
 
 
+def backlog():
+    """Weeks since each home's last standard inspection, from the same model state /schedule uses."""
+    m = _models()
+    if m is None:
+        return _load("backlog_sample.json")
+    from models.config import AS_OF_DATE, FORCED_WEEKS
+
+    homes = [{"ccn": r.ccn, "weeks_since_last": int(r.weeks_since_last),
+              "forced": bool(r.weeks_since_last >= FORCED_WEEKS)}
+             for r in m["lags"].itertuples(index=False)]
+    return {"as_of": AS_OF_DATE, "forced_weeks": round(float(FORCED_WEEKS), 2),
+            "homes": sorted(homes, key=lambda h: h["ccn"])}
+
+
 def trophy():
     p = _processed()
     if p is None:

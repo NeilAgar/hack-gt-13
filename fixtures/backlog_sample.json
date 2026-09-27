@@ -1,0 +1,36 @@
+{
+  "as_of": "2026-07-31",
+  "forced_weeks": 69.1,
+  "homes": [
+    {
+      "ccn": "115999",
+      "weeks_since_last": 72,
+      "forced": true
+    },
+    {
+      "ccn": "115998",
+      "weeks_since_last": 64,
+      "forced": false
+    },
+    {
+      "ccn": "115997",
+      "weeks_since_last": 12,
+      "forced": false
+    },
+    {
+      "ccn": "115996",
+      "weeks_since_last": 58,
+      "forced": false
+    },
+    {
+      "ccn": "115995",
+      "weeks_since_last": 40,
+      "forced": false
+    },
+    {
+      "ccn": "115994",
+      "weeks_since_last": 20,
+      "forced": false
+    }
+  ]
+}

@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import { DEFAULT_CAPACITY, overdueCount } from "@/lib/regulator";
 import { RiskPanel } from "@/components/RiskPanel";
 import { SchedulePanel } from "@/components/SchedulePanel";
-import { getFacilities, getTrophy, postSchedule } from "@/lib/api";
+import { getBacklog, getFacilities, getTrophy, postSchedule } from "@/lib/api";
 import { currentMonth, formatPct, formatRange, isScored } from "@/lib/format";
-import type { ScheduleRequest, ScheduleResponse } from "@/lib/types";
+import type { BacklogResponse, ScheduleRequest, ScheduleResponse } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -21,13 +21,19 @@ async function generateSchedule(body: ScheduleRequest): Promise<ScheduleResponse
 }
 
 export default async function RegulatorPage() {
-  const [trophy, facilities] = await Promise.all([getTrophy(), getFacilities("", 400)]);
+  const [trophy, facilities, backlog] = await Promise.all([
+    getTrophy(),
+    getFacilities("", 400),
+    getBacklog().catch((): BacklogResponse | null => null),
+  ]);
   const byCcn = new Map(facilities.map((facility) => [facility.ccn, facility]));
   const names = Object.fromEntries(facilities.map((facility) => [facility.ccn, facility.name]));
   // The schedule marks every legally overdue home as forced; that count is the smallest usable capacity.
   let overdue = 0;
+  let initialSchedule: ScheduleResponse | null = null;
   try {
-    overdue = overdueCount(await postSchedule({ month: currentMonth(), capacity: DEFAULT_CAPACITY, seed: 0 }));
+    initialSchedule = await postSchedule({ month: currentMonth(), capacity: DEFAULT_CAPACITY, seed: 0 });
+    overdue = overdueCount(initialSchedule);
   } catch {
     overdue = 0;
   }
@@ -86,7 +92,14 @@ export default async function RegulatorPage() {
       </section>
 
       <RiskPanel />
-      <SchedulePanel generateSchedule={generateSchedule} minCapacity={minCapacity} overdue={overdue} names={names} />
+      <SchedulePanel
+        generateSchedule={generateSchedule}
+        minCapacity={minCapacity}
+        overdue={overdue}
+        names={names}
+        backlog={backlog}
+        initialSchedule={initialSchedule}
+      />
     </>
   );
 }
