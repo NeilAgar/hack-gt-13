@@ -33,8 +33,10 @@ export function StaffingChartPanel({
     <>
       <div className="chart-toolbar">
         <p className="meta">
-          Nurse staffing at this home around past inspections, {zoomedOut ? "2 weeks" : "1 week"} before and
-          after the day the inspection ended (day 0). Higher means more nurse hours per resident than usual.
+          <strong>This home compared with itself.</strong> The red line is nurse hours per resident around past
+          inspections, {zoomedOut ? "2 weeks" : "1 week"} before and after the day the inspection ended (day 0).
+          0 is this home&apos;s usual level; higher means more nurse hours per resident than usual.
+          {hasLine ? " The purple dotted line is the top of this home's normal range on ordinary days." : ""}
         </p>
         <button type="button" className="zoom-button" onClick={() => setZoomedOut((z) => !z)} aria-pressed={zoomedOut}>
           {zoomedOut ? "Zoom in to 1 week" : "Zoom out to 2 weeks"}
@@ -51,15 +53,15 @@ export function StaffingChartPanel({
       />
       {hasLine ? (
         <p className="meta">
-          Dotted line: this home&apos;s staffing stays below it on 95% of ordinary days. Large dots mark days
-          above it.
+          Staffing stays below the purple dotted line on 95% of this home&apos;s ordinary days. Large red dots
+          mark days above it.
         </p>
       ) : null}
 
       <details className="advanced">
         <summary>Advanced: the full inspection cycle and the Georgia average</summary>
         <p className="meta">
-          Residual nurse hours per resident day: staffing after removing this home&apos;s usual day-of-week
+          <strong>This home compared with Georgia.</strong> Residual nurse hours per resident day: staffing after removing this home&apos;s usual day-of-week
           pattern, monthly level and 90-day trend. The horizontal axis is days relative to the inspection; day 0
           is the day the inspection ended. The solid line is this home and the dashed line is the Georgia
           average. The score compares days −14 to −1 with days +28 to +56. This describes past inspections, not

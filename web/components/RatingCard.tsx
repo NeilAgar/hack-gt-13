@@ -5,6 +5,7 @@ import {
   LABEL_COLOR,
   LABEL_NOTE,
   LABEL_PENDING,
+  LABEL_RULE,
   NEUTRAL_COLOR,
   popQuizRating,
   scoreHeadline,
@@ -93,6 +94,22 @@ export function RatingCard({
             {label ? `Staffing consistency: ${label}` : LABEL_PENDING}
           </p>
           {label ? <p className="meta">{LABEL_NOTE[label]}</p> : null}
+          <details className="label-rules">
+            <summary>What High, Watch and Low mean</summary>
+            <p className="meta">
+              We compare how much this home&apos;s nurse staffing changes around inspections, with its uncertainty
+              range, against a typical Georgia home.
+            </p>
+            <ul className="meta">
+              {(["High", "Watch", "Low"] as const).map((name) => (
+                <li key={name} aria-current={name === label ? "true" : undefined}>
+                  <span className="swatch" style={{ background: LABEL_COLOR[name] }} aria-hidden />{" "}
+                  <strong>{name}</strong>
+                  {name === label ? " (this home)" : ""}: {LABEL_RULE[name]}
+                </li>
+              ))}
+            </ul>
+          </details>
         </div>
       </div>
 
