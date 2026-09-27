@@ -270,16 +270,16 @@ describe("family copy", () => {
 
 describe("risk score", () => {
   test("matches risk_weights() in models/scheduler.py", () => {
-    // 100 × (0.25 + 1 + min(1, 0.1 + 0.4) + 0.25 × 0.5) = 187.5, as in models/test_smoke.py
-    assert.ok(Math.abs(riskScore({ residents: 100, scorePercentile: 1, weekendPercentile: 0.5, harm: 1, ij: 2 }) - 187.5) < 1e-9);
+    // 100 × (0.25 + 1 + min(1, 0.1 + 0.4)) = 175, as in models/test_smoke.py
+    assert.ok(Math.abs(riskScore({ residents: 100, scorePercentile: 1, harm: 1, ij: 2 }) - 175) < 1e-9);
     // Missing residents default to 80, missing ranks to 0.5, citations cap at 1.
-    assert.ok(Math.abs(riskScore({ ij: 20 }) - 80 * (0.25 + 0.5 + 1 + 0.125)) < 1e-9);
+    assert.ok(Math.abs(riskScore({ ij: 20 }) - 80 * (0.25 + 0.5 + 1)) < 1e-9);
     assert.equal(citationSignal(0, 20), 1);
     // Time: nothing before 12 months, halfway at 13.95, full at the 15.9-month limit.
     assert.equal(timeSignal(11), 0);
     assert.ok(Math.abs(timeSignal(13.95) - 0.5) < 1e-9);
     assert.equal(timeSignal(20), 1);
-    assert.ok(Math.abs(riskScore({ residents: 100, scorePercentile: 1, weekendPercentile: 0.5, harm: 1, ij: 2, monthsSinceLast: 15.9 }) - 387.5) < 1e-9);
+    assert.ok(Math.abs(riskScore({ residents: 100, scorePercentile: 1, harm: 1, ij: 2, monthsSinceLast: 15.9 }) - 375) < 1e-9);
   });
 });
 

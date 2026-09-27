@@ -72,7 +72,7 @@ There are two modes on one backend:
 ### 4. Scheduler (Stackelberg)
 - **Defender:** the state survey agency chooses each facility's inspection probability for the month, cᵢ ∈ [0, 1], with Σcᵢ ≤ K (the month's inspector capacity).
 - **Attacker:** each facility cuts staff in the months it believes it is least likely to be inspected. Its payoff from cutting is weighted by its responsiveness score, so the homes that game hardest cause the most damage when missed.
-- **Risk weight:** residents × (0.25 + S + C + 0.25 × W + 2 × T): staffing-score rank, harm and immediate-jeopardy citations, weekend-dip rank, and time since the last inspection (0 until 12 months, 1 at 15.9). Agency staffing is not used (not in our data). Details in DECISIONS.md.
+- **Risk weight:** residents × (0.25 + S + C + 2 × T): staffing-score rank, harm and immediate-jeopardy citations, and time since the last inspection (0 until 12 months, 1 at 15.9). Agency staffing is not used (not in our data), and weekend dip was removed. Details in DECISIONS.md.
 - **Solve:** a linear program in the style of ORIGAMI (the standard security-game solver), using scipy or PuLP. With ~356 targets it solves in seconds.
 - **Legal constraints:**
   - force cᵢ = 1 when a facility reaches 15.9 months since its last inspection;
