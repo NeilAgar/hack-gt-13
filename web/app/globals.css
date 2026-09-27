@@ -84,7 +84,6 @@ a:hover { color: var(--teal-deep); }
   opacity: 0.85;
 }
 
-.nav { display: flex; gap: 1rem; font-size: 0.95rem; }
 
 main { padding: 1.5rem 0 2.5rem; }
 

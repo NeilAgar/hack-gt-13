@@ -146,9 +146,9 @@ homes overdue that month.
 
 | URL | What |
 |---|---|
-| `http://localhost:3000/` | **Nursing Homes**: search, map, and the list of homes |
+| `http://localhost:3000/` | Home: search, map, and the list of homes (the StaffTrace name in the header links here) |
 | `http://localhost:3000/facility/<ccn>` | One home: rating card, chart, explanation, tour questions |
-| `http://localhost:3000/regulator` | Regulator view: Trophy Check, risk score, schedule. **Not linked in the header** and marked `noindex` |
+| `http://localhost:3000/regulator` | Regulator view: Trophy Check, risk score, schedule. **Not linked anywhere on the site** and marked `noindex` |
 | `http://localhost:3000/live` | Call Clock live view (needs the hardware or its simulator) |
 | `http://localhost:8000/evidence` | Statewide evidence: event-study curve vs placebo |
 | `http://localhost:8000/docs` | Interactive API docs (FastAPI) |
