@@ -279,7 +279,7 @@ export default function LivePage() {
               {typeof facility.ci_low === "number" && typeof facility.ci_high === "number"
                 ? ` (range ${facility.ci_low.toFixed(1)}–${facility.ci_high.toFixed(1)}%)`
                 : ""}
-              {facility.label ? `. Staffing consistency: ${facility.label}.` : "."}
+              {facility.label ? `. Staffing Consistency: ${facility.label}.` : "."}
             </p>
           ) : facility ? (
             <p style={{ margin: 0, opacity: 0.85 }}>{UNSCORED_COPY}</p>

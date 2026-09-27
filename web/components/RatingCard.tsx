@@ -91,7 +91,7 @@ export function RatingCard({
           )}
           <p className="chip">
             <span className="swatch" style={{ background: label ? LABEL_COLOR[label] : NEUTRAL_COLOR }} aria-hidden />
-            {label ? `Staffing consistency: ${label}` : LABEL_PENDING}
+            {label ? `Staffing Consistency: ${label}` : LABEL_PENDING}
           </p>
           {label ? <p className="meta">{LABEL_NOTE[label]}</p> : null}
           <details className="label-rules">
