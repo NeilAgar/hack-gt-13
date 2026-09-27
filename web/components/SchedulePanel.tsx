@@ -137,10 +137,18 @@ export function SchedulePanel({
               ))}
             </tbody>
           </table>
-          <h3>Probability each home is chosen</h3>
-          <button type="button" onClick={() => setShowAllProbs((current) => !current)}>
-            {showAllProbs ? "Show only homes above 0%" : "Show all"}
-          </button>
+          <details className="backlog-group prob-details">
+            <summary>
+              <strong>Probability each home is chosen</strong>
+              <span className="meta">
+                {result.probs.filter((row) => row.prob > 0).length} homes above 0% · {result.probs.length} total
+              </span>
+            </summary>
+            <div className="prob-toolbar">
+              <button type="button" onClick={() => setShowAllProbs((current) => !current)}>
+                {showAllProbs ? "Show only homes above 0%" : "Show all"}
+              </button>
+            </div>
           <div className="table-scroll">
             <table>
               <thead>
@@ -163,6 +171,7 @@ export function SchedulePanel({
               </tbody>
             </table>
           </div>
+          </details>
         </div>
       ) : null}
     </section>

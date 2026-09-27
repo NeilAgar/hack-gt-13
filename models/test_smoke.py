@@ -199,7 +199,7 @@ def test_georgia_gaps_match_a_when_parquet_present():
 
 
 def test_risk_weights_formula():
-    """risk = residents x (0.25 + S + C + 0.25 W + T); no lags here, so T = 0. S, W percentiles; C = min(1, 0.1 harm + 0.2 IJ)."""
+    """risk = residents x (0.25 + S + C + 0.25 W + 2 T); no lags here, so T = 0. S, W percentiles; C = min(1, 0.1 harm + 0.2 IJ)."""
     fac = pd.DataFrame({
         "ccn": ["000001", "000002"],
         "avg_residents": [100.0, None],
@@ -234,3 +234,6 @@ def test_risk_rises_with_time_since_last_inspection():
     with_time = risk_weights(fac, scores, lags)
     assert with_time["000001"] == pytest.approx(no_time["000001"])  # under 12 months: no boost
     assert with_time["000002"] > no_time["000002"]
+    # Weight 2 on T: the boost is residents x 2 x T.
+    t = float(time_signal(pd.Series([int(15.0 * WEEKS_PER_MONTH)])).iloc[0])
+    assert with_time["000002"] - no_time["000002"] == pytest.approx(100 * 2 * t)

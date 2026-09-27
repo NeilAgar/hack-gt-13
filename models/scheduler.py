@@ -45,7 +45,7 @@ RISK_W_CITATIONS = 1.0
 RISK_W_WEEKEND = 0.25
 # T = time since the last standard inspection: 0 until 12 months (CMS's statewide-average target), then rising
 # in a straight line to 1 at the 15.9-month legal limit. Past the limit the home is forced in anyway.
-RISK_W_TIME = 1.0
+RISK_W_TIME = 2.0  # raised from 1 at the team's request (docs/DECISIONS.md)
 TIME_START_MONTHS = 12.0
 HARM_POINTS = 0.1
 IJ_POINTS = 0.2

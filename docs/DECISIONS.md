@@ -54,7 +54,7 @@ in 20 crosses it by chance.
 ## Scheduler risk weights (B's scheduler, changed by C with the team's OK, 2026-09-27)
 
 *Updated below: a time term T was added ("Time since the last inspection in the risk score"). The current
-formula is `risk = residents × (0.25 + S + C + 0.25 × W + T)`.*
+formula is `risk = residents × (0.25 + S + C + 0.25 × W + 2 × T)`.*
 
 `risk = residents × (0.25 + S + C + 0.25 × W)` decides each home's chance of being picked. Code:
 `risk_weights()` in `models/scheduler.py`; shown on the regulator demo from `web/lib/risk.ts`.
@@ -107,3 +107,9 @@ The Trophy Check (homes that met a proxy for CMS's lighter Risk-Based Survey whi
 staffing) is gone from every layer: the regulator page, `GET /api/trophy`, `trophy_flag` in scores and the API,
 `rbs_proxy_eligible` in facilities, the fixtures and the contract (v1.4). The regulator view now focuses on the
 schedule and the inspection backlog. The proxy was never an official eligibility list.
+
+**Update (team decision, 2026-09-27): weight on T raised from 1 to 2.** The team wants homes close to the
+15.9-month limit to be prioritized more. From the comparison above, weight 2 cuts the 12-month overdue count
+from 47 to 44 and sends about 77% of the random picks to homes at 12–15.9 months. The cost: homes inspected
+under a year ago drop to about a 0.7% average chance, so the schedule is a little easier to anticipate. The
+current formula is `risk = residents × (0.25 + S + C + 0.25 × W + 2 × T)`.

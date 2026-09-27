@@ -422,3 +422,5 @@ main { flex: 1; }
 .backlog-group .compact-table { width: 100%; max-width: none; }
 .backlog-group .compact-table td:first-child { min-width: 16rem; }
 .backlog-group .compact-table td:not(:first-child) { white-space: nowrap; overflow-wrap: normal; }
+.prob-details { margin-top: 1rem; }
+.prob-toolbar { padding: 0.5rem 0.75rem 0; }
