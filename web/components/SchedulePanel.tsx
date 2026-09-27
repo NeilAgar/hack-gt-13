@@ -58,7 +58,7 @@ export function SchedulePanel({
   return (
     <>
     <section className="panel" aria-labelledby="schedule-heading" style={{ marginTop: "1rem" }}>
-      <h2 id="schedule-heading">Inspection schedule</h2>
+      <h2 id="schedule-heading">Inspection Schedule</h2>
       <p className="meta">
         Set inspector capacity, then generate this month&apos;s randomized list. The probability is
         the chance a home is chosen under that capacity.
@@ -110,9 +110,6 @@ export function SchedulePanel({
         </button>
       </form>
       {error ? <p className="error">{error}</p> : null}
-      {backlog && (result ?? initialSchedule) ? (
-        <BacklogPanel backlog={backlog} schedule={(result ?? initialSchedule) as ScheduleResponse} names={names} />
-      ) : null}
       {result ? (
         <div aria-live="polite">
           <h3>
@@ -169,6 +166,9 @@ export function SchedulePanel({
         </div>
       ) : null}
     </section>
+    {backlog && (result ?? initialSchedule) ? (
+      <BacklogPanel backlog={backlog} schedule={(result ?? initialSchedule) as ScheduleResponse} names={names} />
+    ) : null}
     </>
   );
 }

@@ -61,19 +61,6 @@ export function nextMonthOverdue(homes: BacklogHome[], probs: ScheduleProb[], fo
   return { crossing: crossing.length, expectedOverdue };
 }
 
-/** One dot per home: months since the last inspection vs. chance of being picked this month. */
-export function scatterPoints(homes: BacklogHome[], probs: ScheduleProb[]) {
-  const probBy = new Map(probs.map((row) => [row.ccn, row.prob]));
-  return homes
-    .filter((home) => probBy.has(home.ccn))
-    .map((home) => ({
-      ccn: home.ccn,
-      bucket: bucketOf(home),
-      months: Math.round(monthsSince(home.weeks_since_last) * 10) / 10,
-      chance: Math.round((probBy.get(home.ccn) ?? 0) * 1000) / 10,
-    }));
-}
-
 export type BacklogRow = {
   ccn: string;
   months: number;
