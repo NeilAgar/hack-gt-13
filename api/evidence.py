@@ -10,7 +10,7 @@ from api import data
 
 PAGE = Path(__file__).resolve().parent / "static" / "evidence.html"
 
-# Days relative to the CMS Survey Date (the inspection's last day), per DECISIONS.md.
+# Days relative to the CMS Survey Date (the inspection's last day), as the README describes.
 ON_SITE = (-4, -1)       # the last days before the recorded end date, when inspectors are typically on site
 PRE_ARRIVAL = (-14, -5)  # the rest of the scored window, before a typical survey starts
 BASELINE = (28, 56)      # a month later, as in the score

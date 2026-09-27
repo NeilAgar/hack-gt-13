@@ -1,4 +1,4 @@
-"""StaffTrace API. Serves docs/CONTRACTS.md v1 under /api."""
+"""StaffTrace API. Serves the API described in README.md under /api."""
 import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path

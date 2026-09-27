@@ -7,7 +7,7 @@ StaffTrace (HackGT 13, Social Good track + SpaceXAI). It scores Georgia nursing 
 It uses public CMS data: PBJ daily nurse staffing, and Inspection Dates (Health Inspection Standard surveys).
 It also generates a randomized, risk-weighted inspection schedule for regulators (a Stackelberg game),
 and gives families a lookup of each home's score.
-Full spec: docs/ARCHITECTURE.md. Data and API contract: docs/CONTRACTS.md. **The contract is law.**
+Spec and API: README.md. Table columns: `pipeline/cms.py`. **Those API and table shapes are law.**
 
 ## Directory ownership (only edit your owner's directory)
 | Dir | Owner | What |
@@ -16,12 +16,12 @@ Full spec: docs/ARCHITECTURE.md. Data and API contract: docs/CONTRACTS.md. **The
 | `models/` | B (models) | hazard model, Stackelberg scheduler, simulation |
 | `api/` | C (backend) | FastAPI, Grok explain, voice |
 | `web/` | D (frontend) | Next.js family + regulator UI |
-| `docs/`, `fixtures/` | shared | change only through a PR labeled `contract` that all owners approve |
+| `fixtures/` | shared | change only through a PR labeled `contract` that all owners approve |
 
-If your task needs a change outside your directory, **stop and write a note in `docs/REQUESTS.md`** instead of editing.
+If your task needs a change outside your directory, **stop and ask that owner in a GitHub issue or PR comment** instead of editing.
 
 ## Hard rules
-1. Never change a schema in docs/CONTRACTS.md on your own. Code against the contract, and use `fixtures/` until real data lands.
+1. Never change an API or table schema on your own; that needs a PR labeled `contract`. Code against the contract, and use `fixtures/` until real data lands.
 2. Never invent CMS column names. Before writing any parser, download or open the file and print its header,
    and check it against the NH Data Dictionary / PBJ data dictionary.
 3. No raw data or secrets in git. `data/raw/` and `.env` are gitignored. Small processed Georgia outputs in

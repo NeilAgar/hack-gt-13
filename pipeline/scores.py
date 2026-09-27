@@ -1,4 +1,4 @@
-"""Survey-responsiveness scores (Chen & Dillender w34037, mapped onto CONTRACTS.md).
+"""Survey-responsiveness scores (Chen & Dillender w34037, mapped onto SCORES_COLS in pipeline/cms.py).
 
 Day 0 is the inspection END date (CMS Survey Date). Paper §3.1 / eq. (1):
 inspectors must report end dates; start dates are unreliable, so they do not

@@ -103,7 +103,7 @@ so homes are judged against that average, not against zero.
 
 Current counts: 30 Low, 295 Watch, 25 High. **The star drop uses exactly the Low rule**, so a lowered star
 and a Low label always go together. The reasoning for every choice (one star, the 95% range, two
-inspections, never adding stars) is in [`docs/DECISIONS.md`](docs/DECISIONS.md).
+inspections, never adding stars) is explained above.
 
 ### 4. The normal-day line on the chart
 The line sits at the 95th percentile of the home's own *ordinary* days (more than 60 days from any
@@ -124,7 +124,7 @@ risk = residents × (0.25 + S + C + 2 × T)
 | **C** | 0.1 per harm citation + 0.2 per immediate-jeopardy citation (3 years), capped at 1 |
 | **T** | Time since the last standard inspection: 0 until 12 months, rising to 1 at the 15.9-month legal limit |
 
-The weights are judgement calls, not fitted to inspection outcomes. The reasoning is in `docs/DECISIONS.md`.
+The weights are judgement calls, not fitted to inspection outcomes.
 
 Each month's schedule:
 1. Homes more than **15.9 months** past their last standard inspection are overdue by law and always get
@@ -196,7 +196,6 @@ Without a key, explanations use a built-in template, and everything else works.
 | `api/` | C (backend) | FastAPI: facilities, StaffTrace rating, normal-day line, Grok explain, evidence, voice, Call Clock intake |
 | `web/` | D (frontend) | Next.js 15 + React 19, Leaflet map, Recharts charts |
 | `hardware/` | | Call Clock firmware (ESP32 / Arduino Nano), serial bridge, simulator, log tools |
-| `docs/` | shared | [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) spec, [`CONTRACTS.md`](docs/CONTRACTS.md) data and API contract, [`DECISIONS.md`](docs/DECISIONS.md) why each choice was made |
 | `fixtures/` | shared | Sample API responses used when real data is missing |
 | `data/processed/` | | Georgia outputs (parquet, under 20 MB). Raw downloads stay out of git |
 
@@ -204,7 +203,7 @@ Without a key, explanations use a built-in template, and everything else works.
 
 ## API
 
-Base `http://localhost:8000/api`. The full contract is in [`docs/CONTRACTS.md`](docs/CONTRACTS.md).
+Base `http://localhost:8000/api`. This table is the API contract.
 
 | Endpoint | Who | Returns |
 |---|---|---|

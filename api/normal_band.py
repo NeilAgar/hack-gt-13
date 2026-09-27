@@ -1,7 +1,7 @@
 """Each home's "normal day" line for the staffing chart: the 95th percentile of its own staffing on ordinary
 days, on the same scale as its curve. A spike above it is unusual for this home, not just for Georgia.
 
-Choices (see docs/DECISIONS.md, "Normal-day line"):
+Choices (see README.md, "The normal-day line on the chart"):
 - Ordinary days are more than 60 days from any of the home's inspections; the chart spans days -42..+56.
 - A curve point averages that day across the home's inspections, so the line is the 95th percentile of the
   average of that many random ordinary days (an average of 2 days swings less than 1 day).

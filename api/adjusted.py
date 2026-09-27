@@ -1,6 +1,6 @@
 """Adjusted star rating: CMS's published overall star rating plus one more adjustment step for
 survey-responsive staffing. Every rule below is taken from CMS's own method or from our data; see
-docs/DECISIONS.md ("Adjusted star rating") for the full reasoning.
+README.md ("Labels and the star drop") for the reasoning.
 
 CMS builds the overall rating in steps: start from the health inspection rating, then add or subtract
 exactly one star for staffing and one star for quality measures, and keep the result within 1-5 stars

@@ -1,4 +1,4 @@
-/** Response types for docs/CONTRACTS.md v1. Percentages are percent units (11.2 means 11.2%). */
+/** Response types for the API in README.md. Percentages are percent units (11.2 means 11.2%). */
 
 export type ConsistencyLabel = "High" | "Watch" | "Low";
 
