@@ -199,7 +199,7 @@ def test_georgia_gaps_match_a_when_parquet_present():
 
 
 def test_risk_weights_formula():
-    """risk = residents x (0.25 + S + C + 0.25 W + 2 T); no lags here, so T = 0. S, W percentiles; C = min(1, 0.1 harm + 0.2 IJ)."""
+    """risk = residents x (0.25 + S + C + 2 T); no lags here, so T = 0. S percentile; C = min(1, 0.1 harm + 0.2 IJ)."""
     fac = pd.DataFrame({
         "ccn": ["000001", "000002"],
         "avg_residents": [100.0, None],
@@ -208,13 +208,13 @@ def test_risk_weights_formula():
     })
     scores = pd.DataFrame({"ccn": ["000001", "000002"], "score_pct": [5.0, 1.0], "weekend_dip_pct": [10.0, 30.0]})
     risk = risk_weights(fac, scores)
-    # Home 1: top score (S=1), C = 0.1 + 0.4 = 0.5, lower weekend dip (W=0.5).
-    assert risk["000001"] == pytest.approx(100 * (0.25 + 1.0 + 0.5 + 0.25 * 0.5))
-    # Home 2: missing residents -> 80, S=0.5, citations capped at 1, W=1.
-    assert risk["000002"] == pytest.approx(80 * (0.25 + 0.5 + 1.0 + 0.25 * 1.0))
-    # Missing score and weekend data sit at the middle percentile.
+    # Home 1: top score (S=1), C = 0.1 + 0.4 = 0.5. Weekend dip is not in the formula.
+    assert risk["000001"] == pytest.approx(100 * (0.25 + 1.0 + 0.5))
+    # Home 2: missing residents -> 80, S=0.5, citations capped at 1.
+    assert risk["000002"] == pytest.approx(80 * (0.25 + 0.5 + 1.0))
+    # A missing score sits at the middle percentile.
     no_scores = risk_weights(fac, pd.DataFrame({"ccn": ["000001"], "score_pct": [None], "weekend_dip_pct": [None]}))
-    assert no_scores["000001"] == pytest.approx(100 * (0.25 + 0.5 + 0.5 + 0.25 * 0.5))
+    assert no_scores["000001"] == pytest.approx(100 * (0.25 + 0.5 + 0.5))
 
 
 def test_time_signal_ramps_from_12_to_15_9_months():
