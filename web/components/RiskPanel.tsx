@@ -4,50 +4,39 @@ const TERMS = [
   {
     term: "Residents",
     weight: "multiplies everything",
-    what: "Average residents per day. More residents means more people affected if staffing is short.",
-    source: "CMS Provider Information",
+    what: "Average residents per day (CMS Provider Information).",
+    why: "Harm is counted in resident-months, so risk scales with how many people live there.",
   },
   {
     term: "Base",
     weight: `${W.base}`,
-    what: "A floor so every home keeps some risk, even with no warning signs.",
-    source: "Fixed",
+    what: "A floor for every home.",
+    why: "A home with no warning signs still has some chance, so no home is ever safe for sure.",
   },
   {
-    term: "Score",
-    weight: `÷ ${W.scoreDivisor}`,
-    what: "Our survey-responsive staffing score: how much higher nurse hours per resident were around past inspections than a month later, in %. Negative scores count as 0.",
-    source: "PBJ + CMS inspection dates (our analysis)",
+    term: "S: staffing score",
+    weight: `× ${W.score}`,
+    what: "The home's rank among Georgia homes (0 = lowest, 1 = highest) on our survey-responsive staffing score: how much higher nurse hours per resident were around past inspections than a month later (PBJ + CMS inspection dates).",
+    why: "This is what a randomized schedule exists to counter, so it gets a full weight.",
   },
   {
-    term: "Harm citations",
-    weight: `× ${W.harm}`,
-    what: "Citations where residents were actually harmed (severity G–I), last 3 years.",
-    source: "CMS Health Deficiencies",
+    term: "C: citations",
+    weight: `× ${W.citations}`,
+    what: `${W.harmPoints} per harm citation (severity G–I) plus ${W.ijPoints} per immediate-jeopardy citation (J–L), last 3 years, capped at 1 (CMS Health Deficiencies).`,
+    why: "Actual harm, confirmed by inspectors and not self-reported, so it counts as much as our score. Immediate jeopardy counts double. The cap stops one extreme record from dominating.",
   },
   {
-    term: "Immediate jeopardy",
-    weight: `× ${W.ij}`,
-    what: "The most serious citations (severity J–L), last 3 years. Weighted twice as much as harm.",
-    source: "CMS Health Deficiencies",
-  },
-  {
-    term: "Weekend dip",
-    weight: `÷ ${W.weekendDivisor}`,
-    what: "How much lower nurse hours per resident are on weekends than on weekdays, in %.",
-    source: "PBJ",
-  },
-  {
-    term: "Agency share",
-    weight: `× ${W.agency}`,
-    what: "Share of hours worked by agency (temporary) staff. Not in our data yet, so it is 0 for every home.",
-    source: "Not loaded",
+    term: "W: weekend dip",
+    weight: `× ${W.weekend}`,
+    what: "The home's rank (0–1) on how much lower nurse hours per resident are on weekends than weekdays (PBJ).",
+    why: "A weaker, indirect sign: almost every home staffs less on weekends. It gets a small say.",
   },
 ];
 
-const EXAMPLE = { residents: 100, harm: 0, ij: 0, weekendDipPct: 18 };
-const steady = riskScore({ ...EXAMPLE, scorePct: 1 });
-const responsive = riskScore({ ...EXAMPLE, scorePct: 10 });
+const EXAMPLE = { residents: 100, harm: 0, ij: 0, weekendPercentile: 0.4 };
+const typical = riskScore({ ...EXAMPLE, scorePercentile: 0.5 });
+const responsive = riskScore({ ...EXAMPLE, scorePercentile: 0.9 });
+const responsiveCited = riskScore({ ...EXAMPLE, scorePercentile: 0.9, ij: 1 });
 
 export function RiskPanel() {
   return (
@@ -60,7 +49,7 @@ export function RiskPanel() {
         Each home gets one risk number. Higher risk means a higher chance of being picked this month.
       </p>
       <p className="equation">
-        risk = residents × (0.25 + score ÷ 10 + 0.2 × harm + 0.4 × IJ + weekend dip ÷ 20 + 2 × agency share)
+        risk = residents × (0.25 + S + C + 0.25 × W)
       </p>
 
       <div style={{ overflowX: "auto" }}>
@@ -70,7 +59,7 @@ export function RiskPanel() {
               <th>Term</th>
               <th>Weight</th>
               <th>What it measures</th>
-              <th>Source</th>
+              <th>Why this weight</th>
             </tr>
           </thead>
           <tbody>
@@ -79,7 +68,7 @@ export function RiskPanel() {
                 <td>{row.term}</td>
                 <td style={{ whiteSpace: "nowrap" }}>{row.weight}</td>
                 <td className="wrap-name">{row.what}</td>
-                <td>{row.source}</td>
+                <td className="wrap-name">{row.why}</td>
               </tr>
             ))}
           </tbody>
@@ -88,13 +77,16 @@ export function RiskPanel() {
 
       <h3>Example</h3>
       <p className="meta">
-        Two homes with 100 residents, no harm or immediate-jeopardy citations and an 18% weekend dip.
-        One has a score of 1%, the other 10%:
+        Three homes with 100 residents and a weekend dip at the 40th percentile. The first has a
+        middle-of-Georgia staffing score, the second a score higher than 90% of Georgia homes, and the
+        third the same high score plus one immediate-jeopardy citation:
       </p>
       <p className="equation">
-        100 × (0.25 + 1 ÷ 10 + 18 ÷ 20) = {Math.round(steady)}
+        100 × (0.25 + 0.5 + 0 + 0.25 × 0.4) = {Math.round(typical)}
         <br />
-        100 × (0.25 + 10 ÷ 10 + 18 ÷ 20) = {Math.round(responsive)}
+        100 × (0.25 + 0.9 + 0 + 0.25 × 0.4) = {Math.round(responsive)}
+        <br />
+        100 × (0.25 + 0.9 + 0.2 + 0.25 × 0.4) = {Math.round(responsiveCited)}
       </p>
 
       <h3>From risk to a schedule</h3>
@@ -114,10 +106,11 @@ export function RiskPanel() {
       </ol>
 
       <p className="note">
-        The weights are illustrative. They were set by hand, not fitted to inspection outcomes. On
-        Georgia data the weekend dip is the largest part of the multiplier for most homes (about half
-        on average), because almost every home staffs about 18% less on weekends. PBJ staffing data is
-        self-reported.
+        The weights are judgement calls, not fitted to inspection outcomes. Ranks put every signal on
+        the same 0–1 scale, so a weight says how much that signal counts. On Georgia data the staffing
+        score is about half of the average multiplier and citations about a sixth, but citations reach
+        the full 1 for the most-cited homes. Agency staffing share is not in our data yet, so it is not
+        used. PBJ staffing data is self-reported.
       </p>
     </section>
   );

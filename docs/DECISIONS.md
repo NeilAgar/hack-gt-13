@@ -50,3 +50,22 @@ Calibration on real data: far from inspections (|day| ≥ 15), home curves sit a
 time (a true 95th percentile gives 5%). On days −4 to −1, 199 of 350 homes go above their line at least once
 (chance alone ≈ 19% over 4 days). Caveat for the UI: one day above the line is not proof on its own; about 1 day
 in 20 crosses it by chance.
+
+## Scheduler risk weights (B's scheduler, changed by C with the team's OK, 2026-09-27)
+
+`risk = residents × (0.25 + S + C + 0.25 × W)` decides each home's chance of being picked. Code:
+`risk_weights()` in `models/scheduler.py`; shown on the regulator demo from `web/lib/risk.ts`.
+
+| Choice | Why |
+|---|---|
+| **S = rank (0–1) on our staffing score, weight 1** | Survey-responsive staffing is what a randomized schedule exists to counter. The old formula used `score ÷ 10`; with most scores at 1–2% it barely moved risk (Spearman correlation with the score: 0.00). |
+| **C = min(1, 0.1 × harm + 0.2 × immediate jeopardy), weight 1** | Actual harm, confirmed by inspectors and not self-reported, so it counts as much as our score. Immediate jeopardy counts double, as before. The cap (reached by about 4% of homes) stops one extreme record from dominating. |
+| **W = rank (0–1) on weekend dip, weight 0.25** | Almost every Georgia home staffs about 18% less on weekends. In the old formula (`dip ÷ 20`) this weak, indirect signal was about 55% of the multiplier. |
+| **Ranks, not raw values** | They put every signal on the same 0–1 scale, so a weight says how much that signal counts, and outliers (scores up to 19%) can't take over. Missing score or weekend data → 0.5, the middle. |
+| **Residents stays a plain multiplier** | The simulation counts harm in resident-months, so risk scales with the number of people. √residents would reduce the size effect, but that is a judgement call we can't back up. |
+| **Base 0.25** | Every home keeps some chance of being picked. |
+| **Agency share dropped** | Not in our data; it was 0 for every home. |
+
+Effect on current data (Spearman correlation of risk with each input, old → new): home size 0.81 → 0.71, our
+staffing score 0.00 → 0.41. Low-label homes in the top 50 by risk: 9 → 11 of 30. These weights are still
+judgement calls, not fitted to inspection outcomes, and the UI labels them that way.

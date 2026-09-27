@@ -27,7 +27,7 @@ import {
   UNSCORED_COPY,
 } from "../lib/format.ts";
 import { clampCapacity, overdueCount, topPredictability, visibleProbabilities } from "../lib/regulator.ts";
-import { riskScore } from "../lib/risk.ts";
+import { citationSignal, riskScore } from "../lib/risk.ts";
 
 const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -326,10 +326,11 @@ describe("family copy", () => {
 });
 
 describe("risk score", () => {
-  test("matches the scheduler formula", () => {
-    // 100 × (0.25 + 10/10 + 0.2·1 + 0.4·2 + 18/20 + 2·0.1) = 335
-    assert.ok(Math.abs(riskScore({ residents: 100, scorePct: 10, harm: 1, ij: 2, weekendDipPct: -18, agencyShare: 0.1 }) - 335) < 1e-9);
-    // Missing residents default to 80; negative scores count as 0.
-    assert.equal(riskScore({ scorePct: -3 }), 20);
+  test("matches risk_weights() in models/scheduler.py", () => {
+    // 100 × (0.25 + 1 + min(1, 0.1 + 0.4) + 0.25 × 0.5) = 187.5, as in models/test_smoke.py
+    assert.ok(Math.abs(riskScore({ residents: 100, scorePercentile: 1, weekendPercentile: 0.5, harm: 1, ij: 2 }) - 187.5) < 1e-9);
+    // Missing residents default to 80, missing ranks to 0.5, citations cap at 1.
+    assert.ok(Math.abs(riskScore({ ij: 20 }) - 80 * (0.25 + 0.5 + 1 + 0.125)) < 1e-9);
+    assert.equal(citationSignal(0, 20), 1);
   });
 });

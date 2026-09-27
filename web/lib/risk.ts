@@ -2,41 +2,49 @@
  * The scheduler's risk weight, mirrored for display. The source of truth is risk_weights() in
  * models/scheduler.py; if the weights change there, change them here too.
  *
- * risk = residents × (0.25 + score/10 + 0.2·harm + 0.4·IJ + |weekend dip|/20 + 2·agency share)
+ * risk = residents × (0.25 + 1 × S + 1 × C + 0.25 × W)
+ *   S = the home's percentile (0–1) among Georgia homes on its survey-responsive score
+ *   C = min(1, 0.1 × harm citations + 0.2 × immediate-jeopardy citations), last 3 years
+ *   W = the home's percentile (0–1) on weekend dip
  */
 export const RISK_WEIGHTS = {
   base: 0.25,
-  scoreDivisor: 10,
-  harm: 0.2,
-  ij: 0.4,
-  weekendDivisor: 20,
-  agency: 2,
+  score: 1,
+  citations: 1,
+  weekend: 0.25,
+  harmPoints: 0.1,
+  ijPoints: 0.2,
   /** Used when a home's resident count is missing. */
   defaultResidents: 80,
+  /** Used when a home has no score or weekend data: the middle of Georgia, not the top or bottom. */
+  missingPercentile: 0.5,
 } as const;
 
 export type RiskInputs = {
   residents?: number | null;
-  scorePct?: number | null;
+  /** 0–1: share of Georgia homes with a lower survey-responsive score. */
+  scorePercentile?: number | null;
+  /** 0–1: share of Georgia homes with a smaller weekend dip. */
+  weekendPercentile?: number | null;
   harm?: number | null;
   ij?: number | null;
-  weekendDipPct?: number | null;
-  agencyShare?: number | null;
 };
 
-const num = (value: number | null | undefined, fallback = 0) =>
-  typeof value === "number" && Number.isFinite(value) ? value : fallback;
+const finite = (value: number | null | undefined): value is number =>
+  typeof value === "number" && Number.isFinite(value);
 
-/** Same arithmetic as the scheduler: missing inputs count as 0, negative scores count as 0. */
+/** Citation signal: 0.1 per harm citation, 0.2 per immediate-jeopardy citation, capped at 1. */
+export function citationSignal(harm?: number | null, ij?: number | null): number {
+  const w = RISK_WEIGHTS;
+  return Math.min(1, w.harmPoints * (finite(harm) ? harm : 0) + w.ijPoints * (finite(ij) ? ij : 0));
+}
+
+/** Same arithmetic as the scheduler. */
 export function riskScore(inputs: RiskInputs): number {
   const w = RISK_WEIGHTS;
-  const residents = num(inputs.residents, w.defaultResidents);
-  const multiplier =
-    w.base +
-    Math.max(0, num(inputs.scorePct)) / w.scoreDivisor +
-    w.harm * num(inputs.harm) +
-    w.ij * num(inputs.ij) +
-    Math.abs(num(inputs.weekendDipPct)) / w.weekendDivisor +
-    w.agency * Math.max(0, num(inputs.agencyShare));
-  return residents * multiplier;
+  const residents = finite(inputs.residents) ? inputs.residents : w.defaultResidents;
+  const s = finite(inputs.scorePercentile) ? inputs.scorePercentile : w.missingPercentile;
+  const wk = finite(inputs.weekendPercentile) ? inputs.weekendPercentile : w.missingPercentile;
+  const c = citationSignal(inputs.harm, inputs.ij);
+  return residents * (w.base + w.score * s + w.citations * c + w.weekend * wk);
 }
