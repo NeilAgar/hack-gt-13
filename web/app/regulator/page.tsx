@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 
 import { DEFAULT_CAPACITY, overdueCount } from "@/lib/regulator";
-import { PredictabilityPanel } from "@/components/PredictabilityPanel";
 import { RiskPanel } from "@/components/RiskPanel";
 import { SchedulePanel } from "@/components/SchedulePanel";
-import { SimulationChart } from "@/components/SimulationChart";
-import { getFacilities, getPredictability, getSimulate, getTrophy, postSchedule } from "@/lib/api";
+import { getFacilities, getTrophy, postSchedule } from "@/lib/api";
 import { currentMonth, formatPct, formatRange, isScored } from "@/lib/format";
-import type { ScheduleRequest, ScheduleResponse, SimulateResponse } from "@/lib/types";
+import type { ScheduleRequest, ScheduleResponse } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -22,18 +20,8 @@ async function generateSchedule(body: ScheduleRequest): Promise<ScheduleResponse
   return postSchedule(body);
 }
 
-async function loadSimulation(capacity: number): Promise<SimulateResponse> {
-  "use server";
-  return getSimulate(capacity);
-}
-
 export default async function RegulatorPage() {
-  const [trophy, facilities, simulation, predictability] = await Promise.all([
-    getTrophy(),
-    getFacilities("", 400),
-    getSimulate(DEFAULT_CAPACITY),
-    getPredictability(),
-  ]);
+  const [trophy, facilities] = await Promise.all([getTrophy(), getFacilities("", 400)]);
   const byCcn = new Map(facilities.map((facility) => [facility.ccn, facility]));
   const names = Object.fromEntries(facilities.map((facility) => [facility.ccn, facility.name]));
   // The schedule marks every legally overdue home as forced; that count is the smallest usable capacity.
@@ -99,8 +87,6 @@ export default async function RegulatorPage() {
 
       <RiskPanel />
       <SchedulePanel generateSchedule={generateSchedule} minCapacity={minCapacity} overdue={overdue} names={names} />
-      <SimulationChart initialSimulation={simulation} loadSimulation={loadSimulation} minCapacity={minCapacity} />
-      <PredictabilityPanel rows={predictability} />
     </>
   );
 }
