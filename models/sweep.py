@@ -77,7 +77,7 @@ def sweep(
 
 
 def main() -> None:
-    p = argparse.ArgumentParser(description="Capacity / LP sweep for Pop Quiz scheduler")
+    p = argparse.ArgumentParser(description="Capacity / LP sweep for StaffTrace scheduler")
     p.add_argument("--month", default=DEFAULT_MONTH)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", type=Path, default=PROCESSED_DIR)

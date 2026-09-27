@@ -8,7 +8,7 @@ import {
   LABEL_COLOR,
   LABEL_PENDING,
   NEUTRAL_COLOR,
-  popQuizRating,
+  staffTraceRating,
   RATING_COLOR,
   UNRATED_COLOR,
   scoreSummary,
@@ -29,7 +29,7 @@ export default async function HomePage({
     <>
       <h1>Staffing consistency around state inspections</h1>
       <p className="lede">
-        Search a Georgia nursing home or a city. On the map, each dot&apos;s color is the home&apos;s Pop Quiz
+        Search a Georgia nursing home or a city. On the map, each dot&apos;s color is the home&apos;s StaffTrace
         rating and its ring is its staffing consistency: whether nurse hours per resident are higher in
         the 14 days through the day before past inspections ended than about a month later, a sign of
         survey-responsive staffing. Every score includes its uncertainty range. PBJ staffing data is
@@ -51,7 +51,7 @@ export default async function HomePage({
       </form>
       <div className="map-legend" aria-label="Map legend">
         <div>
-          <p className="legend-title">Dot color: Pop Quiz rating</p>
+          <p className="legend-title">Dot color: StaffTrace rating</p>
           <ul className="legend">
             {([1, 2, 3, 4, 5] as const).map((stars) => (
               <li key={stars}>
@@ -74,17 +74,17 @@ export default async function HomePage({
             <ul className="facility-list">
               {facilities.map((facility) => {
                 const label = isConsistencyLabel(facility.label) ? facility.label : null;
-                const rating = popQuizRating(facility.overall_star, facility.adjusted_star);
+                const rating = staffTraceRating(facility.overall_star, facility.adjusted_star);
                 return (
                 <li key={facility.ccn}>
                   <details className="facility-item">
                     <summary className="facility-toggle">{facility.name}</summary>
                     <div className="facility-card">
                       <p className="meta">{facility.city}</p>
-                      {rating.popQuiz !== null ? (
-                        <p className="tile-rating" aria-label={`Pop Quiz rating ${rating.popQuiz} out of 5 stars`}>
-                          <span className="tile-stars" aria-hidden>{starString(rating.popQuiz)}</span>{" "}
-                          <strong>Pop Quiz {rating.popQuiz}★</strong>
+                      {rating.staffTrace !== null ? (
+                        <p className="tile-rating" aria-label={`StaffTrace rating ${rating.staffTrace} out of 5 stars`}>
+                          <span className="tile-stars" aria-hidden>{starString(rating.staffTrace)}</span>{" "}
+                          <strong>StaffTrace {rating.staffTrace}★</strong>
                           {rating.lowered ? (
                             <span className="lowered-badge small"> ↓ lowered from CMS {rating.cms}★</span>
                           ) : (

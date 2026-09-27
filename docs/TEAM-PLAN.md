@@ -1,4 +1,4 @@
-# Pop Quiz: 24-hour team plan (Fri 21:30 → Sat 21:30)
+# StaffTrace: 24-hour team plan (Fri 21:30 → Sat 21:30)
 The remaining hours to the 08:00 Sunday deadline are for polish, Devpost, video and rehearsal.
 
 ## Roles (each person drives 1–2 agents inside their own directory)

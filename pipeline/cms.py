@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw"
 PROCESSED = ROOT / "data" / "processed"
 
-UA = {"User-Agent": "PopQuiz-HackGT13/1.0 (academic research; CMS public data)"}
+UA = {"User-Agent": "StaffTrace-HackGT13/1.0 (academic research; CMS public data)"}
 
 # Latest PBJ quarter first. IDs from https://data.cms.gov/data.json (Daily Nurse Staffing).
 PBJ_GA_QUARTERS: list[tuple[str, str]] = [
@@ -173,7 +173,7 @@ OVERLAP_DAYS = 150
 # Staffing Consistency (public label), judged against the Georgia average; see assign_label.
 LABELS = ("High", "Watch", "Low")
 # Low needs a repeated pattern: at least this many usable inspections. Same evidence test as the
-# Pop Quiz star drop (api/adjusted.py MIN_INSPECTIONS); the pipeline must not import the api package.
+# StaffTrace star drop (api/adjusted.py MIN_INSPECTIONS); the pipeline must not import the api package.
 LOW_MIN_INSPECTIONS = 2
 BOOTSTRAP_REPS = 500
 BOOTSTRAP_SEED = 34037

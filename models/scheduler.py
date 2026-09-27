@@ -92,7 +92,7 @@ def _try_pulp_lp(
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=DeprecationWarning)
         warnings.filterwarnings("ignore", message=".*PULP_CBC_CMD.*")
-        prob = pulp.LpProblem("popquiz_origami", pulp.LpMinimize)
+        prob = pulp.LpProblem("stafftrace_origami", pulp.LpMinimize)
         c = [pulp.LpVariable(f"c_{i}", lowBound=0, upBound=1) for i in range(n)]
         u = pulp.LpVariable("u", lowBound=0)
         eps = 1e-4

@@ -90,7 +90,7 @@ def run(
 
 
 def main() -> None:
-    p = argparse.ArgumentParser(description="Pop Quiz models (hazard, schedule, simulate)")
+    p = argparse.ArgumentParser(description="StaffTrace models (hazard, schedule, simulate)")
     p.add_argument("--month", default=DEFAULT_MONTH, help="YYYY-MM schedule month")
     p.add_argument("--capacity", type=int, default=None, help="inspector slots this month")
     p.add_argument("--seed", type=int, default=0)

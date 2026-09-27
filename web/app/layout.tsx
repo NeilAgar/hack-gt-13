@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Pop Quiz",
+  title: "StaffTrace",
   description:
     "Staffing consistency for Georgia nursing homes, based on public CMS Payroll-Based Journal data.",
 };
@@ -21,7 +21,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <div>
               <p className="eyebrow">Georgia nursing homes</p>
               <p className="wordmark">
-                <a href="/">Pop Quiz</a>
+                <a href="/">StaffTrace</a>
               </p>
             </div>
             <nav className="nav" aria-label="Primary">

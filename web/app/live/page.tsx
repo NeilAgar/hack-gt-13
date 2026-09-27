@@ -109,7 +109,7 @@ export default function LivePage() {
     if (params.get("demo") === "0") setThresholds({ amber: 300, red: 600, demo: false });
   }, []);
 
-  // Facility name + Pop Quiz score for the side column.
+  // Facility name + StaffTrace score for the side column.
   useEffect(() => {
     if (!ccn) return;
     let cancelled = false;
@@ -257,7 +257,7 @@ export default function LivePage() {
       >
         <div>
           <p style={{ textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.8rem", opacity: 0.8, margin: 0 }}>
-            Pop Quiz · Call Clock
+            StaffTrace · Call Clock
           </p>
           {facility ? (
             <>
@@ -285,7 +285,7 @@ export default function LivePage() {
             <p style={{ margin: 0, opacity: 0.85 }}>{UNSCORED_COPY}</p>
           ) : (
             <p style={{ margin: 0, opacity: 0.85 }}>
-              {facilityError ? "Pop Quiz score unavailable for this facility." : "Loading score…"}
+              {facilityError ? "StaffTrace score unavailable for this facility." : "Loading score…"}
             </p>
           )}
           <p style={{ margin: "0.3rem 0 0", fontSize: "0.8rem", opacity: 0.75 }}>PBJ staffing data is self-reported.</p>

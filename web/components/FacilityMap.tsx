@@ -8,7 +8,7 @@ import {
   DOT_EDGE_COLOR,
   isConsistencyLabel,
   LABEL_PENDING,
-  popQuizRating,
+  staffTraceRating,
   ratingColor,
   scoreSummary,
 } from "@/lib/format";
@@ -26,7 +26,7 @@ function FitBounds({ facilities }: { facilities: FacilitySummary[] }) {
   return null;
 }
 
-/** Dot radius in pixels. The dot is the Pop Quiz rating only; consistency is on the list and facility page. */
+/** Dot radius in pixels. The dot is the StaffTrace rating only; consistency is on the list and facility page. */
 const DOT_RADIUS = 8;
 
 function placed(facilities: FacilitySummary[]): FacilitySummary[] {
@@ -38,7 +38,7 @@ function placed(facilities: FacilitySummary[]): FacilitySummary[] {
 export default function FacilityMap({ facilities }: { facilities: FacilitySummary[] }) {
   const pins = placed(facilities);
   return (
-    <div className="map-frame" role="region" aria-label="Map of nursing homes: dot color is the Pop Quiz rating">
+    <div className="map-frame" role="region" aria-label="Map of nursing homes: dot color is the StaffTrace rating">
       <MapContainer center={[32.7, -83.4]} zoom={7} scrollWheelZoom={false}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -47,12 +47,12 @@ export default function FacilityMap({ facilities }: { facilities: FacilitySummar
         <FitBounds facilities={pins} />
         {pins.map((facility) => {
           const label = isConsistencyLabel(facility.label) ? facility.label : null;
-          const rating = popQuizRating(facility.overall_star, facility.adjusted_star);
+          const rating = staffTraceRating(facility.overall_star, facility.adjusted_star);
           const center: [number, number] = [facility.lat, facility.lon];
           const ratingText =
-            rating.popQuiz === null
+            rating.staffTrace === null
               ? "Not rated by CMS"
-              : `Pop Quiz ${rating.popQuiz}★${rating.lowered ? ` (lowered from CMS ${rating.cms}★)` : ""}`;
+              : `StaffTrace ${rating.staffTrace}★${rating.lowered ? ` (lowered from CMS ${rating.cms}★)` : ""}`;
           return (
             <CircleMarker
               key={facility.ccn}
@@ -61,7 +61,7 @@ export default function FacilityMap({ facilities }: { facilities: FacilitySummar
               pathOptions={{
                 color: DOT_EDGE_COLOR,
                 weight: 1,
-                fillColor: ratingColor(rating.popQuiz),
+                fillColor: ratingColor(rating.staffTrace),
                 fillOpacity: 1,
               }}
             >

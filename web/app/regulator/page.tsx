@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 // Inspector/admin view: not linked from the site navigation, and kept out of search engines.
 export const metadata: Metadata = {
-  title: "Regulator demo · Pop Quiz",
+  title: "Regulator demo · StaffTrace",
   robots: { index: false, follow: false },
 };
 

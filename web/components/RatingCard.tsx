@@ -7,7 +7,7 @@ import {
   LABEL_PENDING,
   LABEL_RULE,
   NEUTRAL_COLOR,
-  popQuizRating,
+  staffTraceRating,
   scoreHeadline,
   starString,
   UNSCORED_COPY,
@@ -15,7 +15,7 @@ import {
 import type { ConsistencyLabel } from "@/lib/types";
 
 /**
- * The top of the facility page: the Pop Quiz rating first and largest, a clear badge when it
+ * The top of the facility page: the StaffTrace rating first and largest, a clear badge when it
  * is lower than CMS's, the percentage change around inspections, and CMS's own ratings below.
  */
 export function RatingCard({
@@ -41,7 +41,7 @@ export function RatingCard({
   ciHigh: number | null;
   nSurveys: number | null | undefined;
 }) {
-  const { cms, popQuiz, lowered } = popQuizRating(overallStar, adjustedStar);
+  const { cms, staffTrace, lowered } = staffTraceRating(overallStar, adjustedStar);
   const scored = isScored(scorePct, ciLow, ciHigh);
   const headline = scoreHeadline(scorePct, ciLow, ciHigh, nSurveys);
   const star = (n: number | null | undefined) => (Number.isFinite(n) && (n as number) > 0 ? `${n}★` : "not rated");
@@ -50,11 +50,11 @@ export function RatingCard({
     <section className={`rating-card${lowered ? " is-lowered" : ""}`} aria-labelledby="rating-heading">
       <div className="rating-grid">
         <div className="rating-block">
-          <h2 id="rating-heading" className="rating-kicker">Pop Quiz rating</h2>
-          {popQuiz !== null ? (
-            <p className="rating-stars" aria-label={`${popQuiz} out of 5 stars`}>
-              <span aria-hidden>{starString(popQuiz)}</span>
-              <span className="rating-num">{popQuiz} of 5</span>
+          <h2 id="rating-heading" className="rating-kicker">StaffTrace rating</h2>
+          {staffTrace !== null ? (
+            <p className="rating-stars" aria-label={`${staffTrace} out of 5 stars`}>
+              <span aria-hidden>{starString(staffTrace)}</span>
+              <span className="rating-num">{staffTrace} of 5</span>
             </p>
           ) : (
             <p className="rating-none">CMS has not published a rating for this home.</p>
@@ -62,14 +62,14 @@ export function RatingCard({
           {lowered ? (
             <>
               <p className="lowered-badge">
-                <span aria-hidden>↓</span> Lowered from CMS <s>{cms}★</s> to {popQuiz}★
+                <span aria-hidden>↓</span> Lowered from CMS <s>{cms}★</s> to {staffTrace}★
               </p>
               <p className="rating-why">
                 Nurse staffing at this home rises around state inspections more than at a typical
                 Georgia home, so inspectors may not see its usual staffing.
               </p>
             </>
-          ) : popQuiz !== null ? (
+          ) : staffTrace !== null ? (
             <p className="same-badge">Same as the CMS rating ({cms}★)</p>
           ) : null}
           {adjustReason ? <p className="meta">{adjustReason}</p> : null}
@@ -118,7 +118,7 @@ export function RatingCard({
         inspection
       </p>
       <p className="meta">
-        How the Pop Quiz rating works: we start from CMS&apos;s overall star rating and take off one star only
+        How the StaffTrace rating works: we start from CMS&apos;s overall star rating and take off one star only
         when we&apos;re confident this home&apos;s staffing rises around inspections more than a typical Georgia
         home&apos;s, across at least two inspections. We never add stars. This measures survey-responsive
         staffing, based on PBJ staffing data, which is self-reported.
