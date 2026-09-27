@@ -279,7 +279,7 @@ describe("risk score", () => {
     assert.equal(timeSignal(11), 0);
     assert.ok(Math.abs(timeSignal(13.95) - 0.5) < 1e-9);
     assert.equal(timeSignal(20), 1);
-    assert.ok(Math.abs(riskScore({ residents: 100, scorePercentile: 1, weekendPercentile: 0.5, harm: 1, ij: 2, monthsSinceLast: 15.9 }) - 287.5) < 1e-9);
+    assert.ok(Math.abs(riskScore({ residents: 100, scorePercentile: 1, weekendPercentile: 0.5, harm: 1, ij: 2, monthsSinceLast: 15.9 }) - 387.5) < 1e-9);
   });
 });
 

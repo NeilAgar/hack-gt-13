@@ -35,7 +35,7 @@ export function RiskPanel() {
       <p className="meta">
         Each home gets one risk number. Higher risk means a higher chance of being picked this month.
       </p>
-      <p className="equation">risk = residents × (0.25 + S + C + 0.25 × W + T)</p>
+      <p className="equation">risk = residents × (0.25 + S + C + 0.25 × W + 2 × T)</p>
 
       <div style={{ overflowX: "auto" }}>
         <table className="compact-table">

@@ -113,7 +113,7 @@ moves. About 1 ordinary day in 20 crosses it by chance.
 ### 5. Risk score and schedule (`models/`)
 
 ```
-risk = residents × (0.25 + S + C + 0.25 × W + T)
+risk = residents × (0.25 + S + C + 0.25 × W + 2 × T)
 ```
 
 | Term | Meaning |
