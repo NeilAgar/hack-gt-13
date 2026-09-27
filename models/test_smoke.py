@@ -199,7 +199,7 @@ def test_georgia_gaps_match_a_when_parquet_present():
 
 
 def test_risk_weights_formula():
-    """risk = residents x (0.25 + S + C + 0.25 W); S, W percentiles; C = min(1, 0.1 harm + 0.2 IJ)."""
+    """risk = residents x (0.25 + S + C + 0.25 W + T); no lags here, so T = 0. S, W percentiles; C = min(1, 0.1 harm + 0.2 IJ)."""
     fac = pd.DataFrame({
         "ccn": ["000001", "000002"],
         "avg_residents": [100.0, None],

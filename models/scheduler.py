@@ -35,9 +35,10 @@ def default_capacity_from_surveys(n_facilities: int, surveys: pd.DataFrame | Non
 
 # Risk weights (docs/DECISIONS.md, "Scheduler risk weights"). Each signal is put on a 0-1 scale first,
 # so a weight says how much that signal counts:
-#   risk = residents x (BASE + W_SCORE*S + W_CITATIONS*C + W_WEEKEND*W)
+#   risk = residents x (BASE + W_SCORE*S + W_CITATIONS*C + W_WEEKEND*W + W_TIME*T)
 # S, W = the home's percentile among Georgia homes on its survey-responsive score and its weekend dip;
-# C = min(1, 0.1 x harm citations + 0.2 x immediate-jeopardy citations), last 3 years.
+# C = min(1, 0.1 x harm citations + 0.2 x immediate-jeopardy citations), last 3 years;
+# T = time since the last standard inspection (time_signal below; 0 when no lags are passed).
 RISK_BASE = 0.25
 RISK_W_SCORE = 1.0
 RISK_W_CITATIONS = 1.0

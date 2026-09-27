@@ -64,6 +64,8 @@ def simulate(
     k = int(capacity) if capacity is not None else default_capacity(n)
     k = max(1, k)
 
+    # Harm weight per missed month: the home's standing risk, without the time term (T), which changes every
+    # simulated month. The StaffTrace arm's schedule itself uses T through build_schedule's lags.
     risk_s = risk_weights(fac, scores)
     risk = np.array([float(risk_s.get(c, 50.0)) for c in ccns])
     residents = pd.to_numeric(fac.set_index("ccn").reindex(ccns)["avg_residents"], errors="coerce").fillna(80.0).to_numpy()

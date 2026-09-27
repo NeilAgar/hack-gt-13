@@ -53,6 +53,9 @@ in 20 crosses it by chance.
 
 ## Scheduler risk weights (B's scheduler, changed by C with the team's OK, 2026-09-27)
 
+*Updated below: a time term T was added ("Time since the last inspection in the risk score"). The current
+formula is `risk = residents × (0.25 + S + C + 0.25 × W + T)`.*
+
 `risk = residents × (0.25 + S + C + 0.25 × W)` decides each home's chance of being picked. Code:
 `risk_weights()` in `models/scheduler.py`; shown on the regulator demo from `web/lib/risk.ts`.
 
