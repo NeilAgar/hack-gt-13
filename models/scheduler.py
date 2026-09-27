@@ -9,6 +9,7 @@ import pandas as pd
 
 from models.config import (
     DEFAULT_MONTH,
+    FORCED_MONTHS,
     FORCED_WEEKS,
     OFF_HOURS_MIN_SHARE,
     TARGET_AVG_MONTHS,
@@ -34,13 +35,18 @@ def default_capacity_from_surveys(n_facilities: int, surveys: pd.DataFrame | Non
 
 # Risk weights (docs/DECISIONS.md, "Scheduler risk weights"). Each signal is put on a 0-1 scale first,
 # so a weight says how much that signal counts:
-#   risk = residents x (BASE + W_SCORE*S + W_CITATIONS*C + W_WEEKEND*W)
+#   risk = residents x (BASE + W_SCORE*S + W_CITATIONS*C + W_WEEKEND*W + W_TIME*T)
 # S, W = the home's percentile among Georgia homes on its survey-responsive score and its weekend dip;
-# C = min(1, 0.1 x harm citations + 0.2 x immediate-jeopardy citations), last 3 years.
+# C = min(1, 0.1 x harm citations + 0.2 x immediate-jeopardy citations), last 3 years;
+# T = time since the last standard inspection (time_signal below; 0 when no lags are passed).
 RISK_BASE = 0.25
 RISK_W_SCORE = 1.0
 RISK_W_CITATIONS = 1.0
 RISK_W_WEEKEND = 0.25
+# T = time since the last standard inspection: 0 until 12 months (CMS's statewide-average target), then rising
+# in a straight line to 1 at the 15.9-month legal limit. Past the limit the home is forced in anyway.
+RISK_W_TIME = 1.0
+TIME_START_MONTHS = 12.0
 HARM_POINTS = 0.1
 IJ_POINTS = 0.2
 DEFAULT_RESIDENTS = 80.0
@@ -51,7 +57,15 @@ def _percentile(values: pd.Series) -> pd.Series:
     return pd.to_numeric(values, errors="coerce").rank(pct=True).fillna(MISSING_PERCENTILE)
 
 
-def risk_weights(facilities: pd.DataFrame, scores: pd.DataFrame) -> pd.Series:
+def time_signal(weeks_since_last: pd.Series) -> pd.Series:
+    """0 below 12 months since the last inspection, 1 at the 15.9-month limit, linear in between."""
+    months = pd.to_numeric(weeks_since_last, errors="coerce").fillna(0.0) / WEEKS_PER_MONTH
+    return ((months - TIME_START_MONTHS) / (FORCED_MONTHS - TIME_START_MONTHS)).clip(lower=0.0, upper=1.0)
+
+
+def risk_weights(facilities: pd.DataFrame, scores: pd.DataFrame, lags: pd.DataFrame | None = None) -> pd.Series:
+    """Risk per home. With lags (weeks since the last inspection), homes nearing the legal limit rank higher;
+    without them (e.g. weighting harm in the simulation) the time term is 0."""
     fac = facilities.copy()
     fac["ccn"] = fac["ccn"].astype(str).str.zfill(6)
     sc = scores.copy()
@@ -64,8 +78,17 @@ def risk_weights(facilities: pd.DataFrame, scores: pd.DataFrame) -> pd.Series:
     harm = pd.to_numeric(df.get("harm_citations_3y", empty), errors="coerce").fillna(0.0)
     ij = pd.to_numeric(df.get("ij_citations_3y", empty), errors="coerce").fillna(0.0)
     citations = (HARM_POINTS * harm + IJ_POINTS * ij).clip(upper=1.0)
+    if lags is not None and "weeks_since_last" in lags.columns:
+        lag = lags.assign(ccn=lags["ccn"].astype(str).str.zfill(6)).drop_duplicates("ccn").set_index("ccn")
+        time = time_signal(df["ccn"].map(lag["weeks_since_last"]))
+    else:
+        time = pd.Series(0.0, index=df.index)
     risk = residents * (
-        RISK_BASE + RISK_W_SCORE * score + RISK_W_CITATIONS * citations + RISK_W_WEEKEND * weekend
+        RISK_BASE
+        + RISK_W_SCORE * score
+        + RISK_W_CITATIONS * citations
+        + RISK_W_WEEKEND * weekend
+        + RISK_W_TIME * time
     )
     return pd.Series(risk.to_numpy(), index=df["ccn"].to_numpy(), dtype=float)
 
@@ -227,9 +250,9 @@ def build_schedule(
     fac = facilities.copy()
     fac["ccn"] = fac["ccn"].astype(str).str.zfill(6)
     names = dict(zip(fac["ccn"], fac.get("name", fac["ccn"])))
-    risk_s = risk_weights(fac, scores)
     lag_df = lags.copy()
     lag_df["ccn"] = lag_df["ccn"].astype(str).str.zfill(6)
+    risk_s = risk_weights(fac, scores, lag_df)
     lag_map = dict(zip(lag_df["ccn"], lag_df["weeks_since_last"]))
     last_m = dict(zip(lag_df["ccn"], lag_df["last_month"])) if "last_month" in lag_df.columns else {}
 

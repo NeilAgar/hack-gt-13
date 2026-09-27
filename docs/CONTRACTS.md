@@ -1,4 +1,4 @@
-# CONTRACTS.md: v1.2 (FROZEN)
+# CONTRACTS.md: v1.3 (FROZEN)
 Change only through a PR labeled `contract` that all 4 owners approve. Bump the version when you change it.
 
 ## Keys and conventions
@@ -50,3 +50,6 @@ GET  /simulate?capacity=int
  → {months:36, status_quo:{undetected_shirk_resident_months}, popquiz:{undetected_shirk_resident_months}, reduction_pct}
 GET  /predictability → [{ccn,name,p_next_60d}]   (regulator only)
 GET  /trophy → [{ccn,name,overall_star,score_pct,ci_low}]
+GET  /backlog → {as_of:"YYYY-MM-DD", forced_weeks:float, homes:[{ccn,weeks_since_last:int,forced:bool}]}
+ (v1.3, regulator only) weeks since each home's last standard inspection, as of the scheduler's as-of date.
+ forced = weeks_since_last >= forced_weeks (15.9 months), the same test /schedule uses. Past dates only; no prediction.

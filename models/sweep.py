@@ -35,7 +35,7 @@ def sweep(
     table, h, lags = hazard_table(surveys, fac)
     n = len(fac)
     n_forced = int((lags["weeks_since_last"] >= FORCED_WEEKS).sum())
-    risk = risk_weights(fac, scores)
+    risk = risk_weights(fac, scores, lags)  # same risk (incl. time since last inspection) the schedule uses
     rows = []
     for k in capacity_grid(n, n_forced):
         plan = build_schedule(fac, scores, lags, month=month, capacity=k, seed=seed)

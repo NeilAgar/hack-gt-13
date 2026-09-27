@@ -409,3 +409,9 @@ main { flex: 1; }
 .compact-table { font-size: 0.85rem; max-width: 46rem; }
 .compact-table th, .compact-table td { padding: 0.3rem 0.5rem; }
 .compact-table th { white-space: nowrap; }
+
+.backlog { margin-top: 1.25rem; }
+.backlog-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin: 0.75rem 0; }
+.backlog-figure { margin: 0; }
+.backlog-figure figcaption { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.25rem; }
+.chart-tooltip { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.82rem; color: var(--ink); }

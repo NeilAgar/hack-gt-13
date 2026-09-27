@@ -66,6 +66,7 @@ def test_public_endpoints_never_expose_timing():
     ("get", "/api/simulate?capacity=3", None),
     ("get", "/api/predictability", None),
     ("get", "/api/trophy", None),
+    ("get", "/api/backlog", None),
 ])
 def test_regulator_endpoints_need_header(method, path, body):
     kw = {"json": body} if body else {}
@@ -153,6 +154,7 @@ def test_regulator_falls_back_to_fixtures_without_models(monkeypatch):
     r = client.post("/api/schedule", json={"month": "2026-10", "capacity": 3}, headers=REG)
     assert r.headers["X-Data-Source"] == "fixtures" and r.json() == data._load("schedule_sample.json")
     assert client.get("/api/simulate?capacity=3", headers=REG).json() == data._load("simulate_sample.json")
+    assert client.get("/api/backlog", headers=REG).json() == data._load("backlog_sample.json")
     data.simulate.cache_clear()
 
 
@@ -315,3 +317,16 @@ def test_window_wording_matches_web_and_never_says_before_inspections():
     # A faithful Grok reply that quotes the window keeps its "14".
     reply = f"Sample Harbor: nurse hours per resident {WINDOW} were 10.8% higher (range 4.9% to 16.2%)."
     assert explain_mod.passes_guardrails(reply, explain_mod.facts_for(FAC))
+
+
+def test_backlog_matches_schedule_forced():
+    """Every home the schedule forces is overdue in /backlog, and vice versa."""
+    b = client.get("/api/backlog", headers=REG)
+    assert b.status_code == 200 and b.headers["X-Data-Source"].startswith("models:")
+    body = b.json()
+    assert set(body) == {"as_of", "forced_weeks", "homes"}
+    homes = body["homes"]
+    assert homes and all(set(h) == {"ccn", "weeks_since_last", "forced"} for h in homes)
+    assert all(h["forced"] == (h["weeks_since_last"] >= body["forced_weeks"]) for h in homes)
+    s = client.post("/api/schedule", json={"month": "2026-08", "capacity": 22, "seed": 1}, headers=REG).json()
+    assert {p["ccn"] for p in s["probs"] if p["forced"]} == {h["ccn"] for h in homes if h["forced"]}

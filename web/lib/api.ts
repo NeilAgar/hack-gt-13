@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import type {
+  BacklogResponse,
   ExplainResponse,
   FacilityDetail,
   FacilitySummary,
@@ -185,5 +186,13 @@ export async function getTrophy(): Promise<TrophyRow[]> {
   return withFallback(
     () => request<TrophyRow[]>("/trophy", undefined, true),
     () => readFixture<TrophyRow[]>("trophy.json"),
+  );
+}
+
+/** Regulator only. Weeks since each home's last inspection; never call this from family pages. */
+export async function getBacklog(): Promise<BacklogResponse> {
+  return withFallback(
+    () => request<BacklogResponse>("/backlog", undefined, true),
+    () => readFixture<BacklogResponse>("backlog_sample.json"),
   );
 }

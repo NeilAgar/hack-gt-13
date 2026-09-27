@@ -96,6 +96,11 @@ def predictability():
     return data.predictability()
 
 
+@regulator.get("/backlog", dependencies=from_models)
+def backlog():
+    return data.backlog()
+
+
 @regulator.get("/trophy", dependencies=[Depends(source_header)])
 def trophy():
     return data.trophy()

@@ -18,6 +18,11 @@ const TERMS = [
     weight: `${W.weekend}`,
     why: "Rank (0–1) on weekend staffing drop. A weaker sign, since most homes have one.",
   },
+  {
+    term: "T: time since last inspection",
+    weight: `${W.time}`,
+    why: "0 until 12 months, rising to 1 at the 15.9-month legal limit, so homes nearing it rank higher.",
+  },
 ];
 
 export function RiskPanel() {
@@ -30,7 +35,7 @@ export function RiskPanel() {
       <p className="meta">
         Each home gets one risk number. Higher risk means a higher chance of being picked this month.
       </p>
-      <p className="equation">risk = residents × (0.25 + S + C + 0.25 × W)</p>
+      <p className="equation">risk = residents × (0.25 + S + C + 0.25 × W + T)</p>
 
       <div style={{ overflowX: "auto" }}>
         <table className="compact-table">

@@ -2,9 +2,10 @@
 
 import { useState, type FormEvent } from "react";
 
+import { BacklogPanel } from "@/components/BacklogPanel";
 import { currentMonth, formatProbability } from "@/lib/format";
 import { clampCapacity, DEFAULT_CAPACITY, visibleProbabilities } from "@/lib/regulator";
-import type { ScheduleRequest, ScheduleResponse } from "@/lib/types";
+import type { BacklogResponse, ScheduleRequest, ScheduleResponse } from "@/lib/types";
 
 const CAPACITY_MAX = 40;
 
@@ -13,6 +14,8 @@ export function SchedulePanel({
   minCapacity = 1,
   overdue = 0,
   names = {},
+  backlog = null,
+  initialSchedule = null,
 }: {
   generateSchedule: (body: ScheduleRequest) => Promise<ScheduleResponse>;
   /** Smallest capacity allowed: the number of legally overdue homes. */
@@ -20,6 +23,10 @@ export function SchedulePanel({
   overdue?: number;
   /** Home name by CCN, for the full probability table. */
   names?: Record<string, string>;
+  /** Weeks since each home's last inspection, for the backlog charts. */
+  backlog?: BacklogResponse | null;
+  /** The plan the backlog charts show before Generate is clicked. */
+  initialSchedule?: ScheduleResponse | null;
 }) {
   const min = Math.min(Math.max(1, minCapacity), CAPACITY_MAX);
   const [month, setMonth] = useState(currentMonth);
@@ -103,6 +110,9 @@ export function SchedulePanel({
         </button>
       </form>
       {error ? <p className="error">{error}</p> : null}
+      {backlog && (result ?? initialSchedule) ? (
+        <BacklogPanel backlog={backlog} schedule={(result ?? initialSchedule) as ScheduleResponse} names={names} />
+      ) : null}
       {result ? (
         <div aria-live="polite">
           <h3>

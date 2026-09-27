@@ -116,7 +116,7 @@ moves. About 1 ordinary day in 20 crosses it by chance.
 ### 5. Risk score and schedule (`models/`)
 
 ```
-risk = residents × (0.25 + S + C + 0.25 × W)
+risk = residents × (0.25 + S + C + 0.25 × W + T)
 ```
 
 | Term | Meaning |
@@ -126,6 +126,7 @@ risk = residents × (0.25 + S + C + 0.25 × W)
 | **S** | The home's rank (0–1) among Georgia homes on its staffing score |
 | **C** | 0.1 per harm citation + 0.2 per immediate-jeopardy citation (3 years), capped at 1 |
 | **W** | The home's rank (0–1) on weekend staffing drop, a weaker signal |
+| **T** | Time since the last standard inspection: 0 until 12 months, rising to 1 at the 15.9-month legal limit |
 
 The weights are judgement calls, not fitted to inspection outcomes. The reasoning is in `docs/DECISIONS.md`.
 
@@ -142,13 +143,19 @@ Each month's schedule:
 The default capacity is **22 inspections a month**, Georgia's recent real pace. The minimum is the number of
 homes overdue that month.
 
+**Inspection backlog.** Under the schedule, the regulator page shows every home grouped by months since its last
+standard inspection (0–6, 6–12, 12–15.9, overdue). A scatter plot shows each home's chance of being picked
+in the current plan. The page also shows how many homes will cross the 15.9-month limit within a month, and
+how many of those the plan is expected to leave uninspected. The charts update each time you click
+Generate.
+
 ## Pages
 
 | URL | What |
 |---|---|
 | `http://localhost:3000/` | Home: search, map, and the list of homes (the StaffTrace name in the header links here) |
 | `http://localhost:3000/facility/<ccn>` | One home: rating card, chart, explanation, tour questions |
-| `http://localhost:3000/regulator` | Regulator view: Trophy Check, risk score, schedule. **Not linked anywhere on the site** and marked `noindex` |
+| `http://localhost:3000/regulator` | Regulator view: Trophy Check, risk score, schedule, inspection backlog. **Not linked anywhere on the site** and marked `noindex` |
 | `http://localhost:3000/live` | Call Clock live view (needs the hardware or its simulator) |
 | `http://localhost:8000/evidence` | Statewide evidence: event-study curve vs placebo |
 | `http://localhost:8000/docs` | Interactive API docs (FastAPI) |
@@ -210,6 +217,7 @@ Base `http://localhost:8000/api`. The full contract is in [`docs/CONTRACTS.md`](
 | `GET /evidence` | public | Statewide event study and placebo |
 | `POST /schedule {month, capacity, seed?}` | regulator | Selected homes and each home's probability |
 | `GET /trophy` | regulator | Trophy Check list |
+| `GET /backlog` | regulator | Weeks since each home's last standard inspection, and whether it is overdue |
 | `GET /simulate`, `GET /predictability` | regulator | Kept in the contract; no longer shown on the site |
 | `POST /bedside`, `GET /bedside/*`, `GET /facility/{ccn}/bedside` | device / public | Call Clock events, live stream and log verification |
 
