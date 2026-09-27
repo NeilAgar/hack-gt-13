@@ -1,4 +1,4 @@
-"""Pop Quiz models package (owner B): hazard, scheduler, simulation."""
+"""StaffTrace models package (owner B): hazard, scheduler, simulation."""
 
 from models.config import DEFAULT_MONTH, PROCESSED_DIR
 

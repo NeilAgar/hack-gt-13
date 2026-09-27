@@ -41,7 +41,7 @@ def format_headline(score_pct: float, ci_low: float, ci_high: float, n_surveys: 
 
 def state_average(raw_pct: pd.Series) -> float:
     """Georgia average: mean of the facility-level raw percentages. It is the value scores are shrunk
-    toward, and the same average api/adjusted.py (state_average) uses for the Pop Quiz star drop."""
+    toward, and the same average api/adjusted.py (state_average) uses for the StaffTrace star drop."""
     return float(raw_pct.dropna().mean())
 
 
@@ -50,7 +50,7 @@ def assign_label(
 ) -> str:
     """Staffing Consistency, judged against the typical Georgia home rather than against zero.
 
-    Low uses the same evidence test as the Pop Quiz star drop: at least LOW_MIN_INSPECTIONS inspections
+    Low uses the same evidence test as the StaffTrace star drop: at least LOW_MIN_INSPECTIONS inspections
     and the whole range strictly above the Georgia average (ci_low == state_avg does not qualify).
     Watch: not Low, but the range reaches above the average (it crosses the average, or it is above it
     with only one inspection). High: the whole range is at or below the average.

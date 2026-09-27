@@ -1,7 +1,7 @@
-# Pop Quiz: product and architecture spec
+# StaffTrace: product and architecture spec
 
 ## What it is
-Pop Quiz is a web app built on public CMS data. For every Georgia nursing home, it measures whether staffing rises around state inspections and falls back afterward. It also gives state regulators an inspection calendar that homes can't predict.
+StaffTrace is a web app built on public CMS data. For every Georgia nursing home, it measures whether staffing rises around state inspections and falls back afterward. It also gives state regulators an inspection calendar that homes can't predict.
 
 There are two modes on one backend:
 - **Family mode** is public.
@@ -22,7 +22,7 @@ There are two modes on one backend:
 ### Regulator mode (demo login)
 1. **Statewide table:** each facility's score, uncertainty, risk signals and **Trophy Check** flag. The flag means the home qualifies for CMS's lighter Risk-Based Survey even though its staffing rises only around inspections.
 2. **Scheduler:** set inspector capacity per month, then press **Generate**. The app returns this month's randomized inspection list plus each facility's probability of being chosen.
-3. **Simulation:** gaming exposure under the current near-annual rhythm vs. the Pop Quiz schedule, at the same inspector budget.
+3. **Simulation:** gaming exposure under the current near-annual rhythm vs. the StaffTrace schedule, at the same inspector budget.
 4. **Predictability panel:** internal only. Shows how guessable each home's next inspection is today.
 5. Export to CSV.
 
@@ -37,7 +37,7 @@ There are two modes on one backend:
  Health Deficiencies ─┘            3 Event study → score + CI (per facility)   FastAPI ─▶ Next.js
                                    4 Hazard model (internal)                    │         Family / Regulator
                                    5 Stackelberg LP → marginals → sampled plan  │         Map + charts
-                                   6 Simulation (status quo vs Pop Quiz)        │
+                                   6 Simulation (status quo vs StaffTrace)        │
                                    7 Trophy Check join                          ├─▶ Grok: explanation
                                         │                                       └─▶ Grok Voice line
                                         └──▶ precomputed tables (facility, curve, schedule)
@@ -84,7 +84,7 @@ There are two modes on one backend:
 - **Fallback:** if the LP slips, use risk-weighted proportional probabilities under the same constraints.
 
 ### 5. Simulation
-- Each facility responds as well as it can to what it believes: the historical hazard in the status-quo case, the Pop Quiz probabilities in ours.
+- Each facility responds as well as it can to what it believes: the historical hazard in the status-quo case, the StaffTrace probabilities in ours.
 - **Metric:** resident-weighted "undetected shirk-months" over 3 years, compared at the same total inspection count.
 - Label it "illustrative model." Cite NBER's ~92 lives a year as the external benchmark and don't claim lives saved ourselves.
 

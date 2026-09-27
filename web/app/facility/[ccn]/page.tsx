@@ -21,7 +21,7 @@ export async function generateMetadata({
   params: Promise<{ ccn: string }>;
 }): Promise<Metadata> {
   const { ccn } = await params;
-  return { title: `Facility ${ccn} · Pop Quiz` };
+  return { title: `Facility ${ccn} · StaffTrace` };
 }
 
 export default async function FacilityPage({

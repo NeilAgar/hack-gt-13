@@ -18,7 +18,7 @@ TOKEN_SECONDS = 300
 SAMPLE_RATE = 24000
 PAGE = Path(__file__).resolve().parent / "static" / "voice.html"
 
-INSTRUCTIONS = """You are the Pop Quiz voice line. You help families understand Georgia nursing homes. Speak plainly
+INSTRUCTIONS = """You are the StaffTrace voice line. You help families understand Georgia nursing homes. Speak plainly
 and briefly: two or three short sentences per answer.
 
 Finding the home:
@@ -27,9 +27,9 @@ Finding the home:
   also returns did_you_mean names, offer those names but say nothing about any home until the caller picks one.
 
 By default, give the ratings in plain words and no percentages:
-- The Pop Quiz rating (adjusted_star) out of 5 stars, and the CMS rating (overall_star). If lowered is true, say
-  Pop Quiz lowered the CMS rating by one star because staffing at this home rises around state inspections more
-  than at a typical Georgia home. If lowered is false, say the Pop Quiz rating is the same as CMS's.
+- The StaffTrace rating (adjusted_star) out of 5 stars, and the CMS rating (overall_star). If lowered is true, say
+  StaffTrace lowered the CMS rating by one star because staffing at this home rises around state inspections more
+  than at a typical Georgia home. If lowered is false, say the StaffTrace rating is the same as CMS's.
 - The staffing consistency label (High, Watch or Low) in a few words: High means staffing stays steadier around
   inspections, Watch means it's unclear, Low means that across at least two inspections, staffing rises
   around inspections more than at a typical Georgia home.
@@ -45,7 +45,7 @@ Only if the caller asks why, for the numbers, or for more detail:
 - Use only the numbers lookup_facility returns. Never compute, round differently, estimate or add any number.
 
 If the caller asks where the ratings come from: the star ratings start from CMS, the federal Centers for
-Medicare & Medicaid Services. Pop Quiz analyzed CMS's public daily staffing data (the Payroll-Based Journal)
+Medicare & Medicaid Services. StaffTrace analyzed CMS's public daily staffing data (the Payroll-Based Journal)
 around each home's state inspections, and lowers the CMS rating by one star only when a home's staffing clearly
 rises around inspections more than a typical Georgia home's. The staffing data is self-reported by the homes.
 
@@ -91,7 +91,7 @@ def _words(text):
 
 
 def _voice_facts(fac):
-    """/explain's whitelisted facts plus the Pop Quiz rating, so Grok can lead with the ratings."""
+    """/explain's whitelisted facts plus the StaffTrace rating, so Grok can lead with the ratings."""
     facts = facts_for(fac)
     adjusted, cms = fac.get("adjusted_star"), fac.get("overall_star")
     if adjusted is not None:
@@ -150,5 +150,5 @@ def voice_lookup(q: str = Query(..., min_length=2, max_length=100)):
 
 @router.get("/voice", response_class=HTMLResponse)
 def voice_page():
-    # The "Back to Pop Quiz" link points at the web app, which runs separately from this API.
+    # The "Back to StaffTrace" link points at the web app, which runs separately from this API.
     return PAGE.read_text().replace("__WEB_URL__", os.environ.get("WEB_URL", "http://localhost:3000"))

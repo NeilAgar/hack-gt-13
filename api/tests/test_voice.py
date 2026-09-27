@@ -107,6 +107,6 @@ def test_lookup_includes_the_pop_quiz_rating(monkeypatch):
 
 def test_voice_page_has_a_back_link_to_the_web_app(monkeypatch):
     assert 'href="http://localhost:3000"' in client.get("/voice").text
-    monkeypatch.setenv("WEB_URL", "https://popquiz.example")
+    monkeypatch.setenv("WEB_URL", "https://stafftrace.example")
     r = client.get("/voice").text
-    assert 'href="https://popquiz.example"' in r and "Back to Pop Quiz" in r and "__WEB_URL__" not in r
+    assert 'href="https://stafftrace.example"' in r and "Back to StaffTrace" in r and "__WEB_URL__" not in r

@@ -1,4 +1,4 @@
-"""Pop Quiz API. Serves docs/CONTRACTS.md v1 under /api."""
+"""StaffTrace API. Serves docs/CONTRACTS.md v1 under /api."""
 import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -23,7 +23,7 @@ async def lifespan(app):
     yield
 
 
-app = FastAPI(title="Pop Quiz API", lifespan=lifespan)
+app = FastAPI(title="StaffTrace API", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"],
                    allow_methods=["*"], allow_headers=["*"])
 

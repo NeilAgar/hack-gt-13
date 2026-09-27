@@ -1,4 +1,4 @@
-"""Illustrative 36-month undetected-shirk comparison (status quo vs Pop Quiz)."""
+"""Illustrative 36-month undetected-shirk comparison (status quo vs StaffTrace)."""
 
 from __future__ import annotations
 
@@ -123,7 +123,7 @@ def simulate(
         "reduction_pct": round(reduction, 1),
         "note": (
             "Illustrative model. Homes still staff to the historical 40-60 week window; "
-            "only the inspection process changes (status quo bunches there, Pop Quiz samples "
+            "only the inspection process changes (status quo bunches there, StaffTrace samples "
             "K risk-weighted slots). Chen & Dillender (NBER w34037); "
             "Gandhi, Olenski & Shi (NBER w34491). Does not estimate lives saved."
         ),

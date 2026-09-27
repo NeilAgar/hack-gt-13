@@ -2,7 +2,7 @@
 (Also copy this file to CLAUDE.md and .cursorrules so every tool picks it up.)
 
 ## Project
-Pop Quiz (HackGT 13, Social Good track + SpaceXAI). It scores Georgia nursing homes on
+StaffTrace (HackGT 13, Social Good track + SpaceXAI). It scores Georgia nursing homes on
 "survey-responsive staffing": staffing that rises around state inspections and falls afterward.
 It uses public CMS data: PBJ daily nurse staffing, and Inspection Dates (Health Inspection Standard surveys).
 It also generates a randomized, risk-weighted inspection schedule for regulators (a Stackelberg game),

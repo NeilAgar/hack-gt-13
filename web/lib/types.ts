@@ -58,7 +58,7 @@ export type FacilityDetail = {
   curve: CurvePoint[];
   state_curve: CurvePoint[];
   explanation: string | null;
-  /** v1.1: Pop Quiz rating and the plain-language reason for it. */
+  /** v1.1: StaffTrace rating and the plain-language reason for it. */
   adjusted_star?: number | null;
   adjust_reason?: string | null;
   /** v1.2: this home's normal-day line, same units as curve.v (95th percentile of ordinary days). */

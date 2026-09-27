@@ -15,7 +15,7 @@ export const LABEL_COLOR: Record<ConsistencyLabel, string> = {
 /** Rings and chips with no score or no High/Watch/Low label. */
 export const NEUTRAL_COLOR = "#e3dccf";
 
-/** Map-dot fill: the Pop Quiz rating, 1 to 5 stars. */
+/** Map-dot fill: the StaffTrace rating, 1 to 5 stars. */
 export const RATING_COLOR: Record<1 | 2 | 3 | 4 | 5, string> = {
   1: "#d03b3b",
   2: "#f07a2a",
@@ -92,23 +92,23 @@ export function starString(n: number): string {
   return "★".repeat(filled) + "☆".repeat(5 - filled);
 }
 
-export type PopQuizRating = {
+export type StaffTraceRating = {
   cms: number | null;
-  popQuiz: number | null;
+  staffTrace: number | null;
   lowered: boolean;
 };
 
 /**
- * The Pop Quiz rating: the API's adjusted_star, or the CMS rating unchanged when the API
+ * The StaffTrace rating: the API's adjusted_star, or the CMS rating unchanged when the API
  * doesn't send one (fixtures). Never higher than CMS.
  */
-export function popQuizRating(
+export function staffTraceRating(
   overallStar: number | null | undefined,
   adjustedStar: number | null | undefined,
-): PopQuizRating {
+): StaffTraceRating {
   const cms = Number.isFinite(overallStar) && (overallStar as number) > 0 ? (overallStar as number) : null;
-  const popQuiz = Number.isFinite(adjustedStar) ? (adjustedStar as number) : cms;
-  return { cms, popQuiz, lowered: cms !== null && popQuiz !== null && popQuiz < cms };
+  const staffTrace = Number.isFinite(adjustedStar) ? (adjustedStar as number) : cms;
+  return { cms, staffTrace, lowered: cms !== null && staffTrace !== null && staffTrace < cms };
 }
 
 export function formatRange(ciLow: number, ciHigh: number): string {
