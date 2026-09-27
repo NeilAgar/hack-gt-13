@@ -135,6 +135,9 @@ static void print_status() {
   Serial.print(event_log->capacity());
   Serial.print(F(" ram_never_used="));
   Serial.println(never_used_ram());
+#if LIGHT_FROM_BUTTON
+  Serial.println(F("DBG WARNING light source = BUTTON BYPASS (not the light sensor; not independent)"));
+#endif
 }
 
 static void handle_command(const char* line) {
@@ -211,7 +214,12 @@ void setup() {
   Serial.print('/');
   Serial.print(log.capacity());
   Serial.println(kept ? F(" (log kept)") : F(" (new log)"));
+#if LIGHT_FROM_BUTTON
+  Serial.println(F("DBG WARNING BYPASS BUILD: the call light is read from the button's LED pin, not the light sensor."));
+  Serial.println(F("DBG WARNING This is not an independent measurement. Re-flash with -e nano once the sensor works."));
+#else
   Serial.println(F("DBG boot with the call light OFF: the first LDR reading seeds the dark baseline"));
+#endif
   paint_free_ram();
 }
 
@@ -220,7 +228,13 @@ void loop() {
 
   mock_station::poll(now);  // demo hardware only; shares nothing with what follows
 
+#if LIGHT_FROM_BUTTON
+  light.poll(now);  // keep sampling the LDR so `cal on` still shows it
+  // BYPASS: read the mock call LED's pin directly instead of seeing it through the LDR (see config.h).
+  const LightState ls = digitalRead(PIN_MOCK_CALL_LED) == HIGH ? LightState::ON : LightState::OFF;
+#else
   const LightState ls = light.poll(now);
+#endif
   const bool entered = entry.poll(now);
   CallEvent evs[3];  // at most call_on + entry + cancel in one tick
   const size_t n = call_clock->update(now, ls, entered, evs, 3);
