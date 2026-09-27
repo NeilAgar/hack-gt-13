@@ -407,3 +407,7 @@ main { flex: 1; }
 .label-rules summary { cursor: pointer; color: var(--teal); font-weight: 600; font-size: 0.92rem; }
 .label-rules ul { list-style: none; padding: 0; margin: 0.4rem 0 0; display: grid; gap: 0.35rem; }
 .label-rules li[aria-current="true"] { color: var(--ink); }
+
+.compact-table { font-size: 0.85rem; max-width: 46rem; }
+.compact-table th, .compact-table td { padding: 0.3rem 0.5rem; }
+.compact-table th { white-space: nowrap; }
