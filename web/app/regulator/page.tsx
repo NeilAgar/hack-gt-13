@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import { DEFAULT_CAPACITY, overdueCount } from "@/lib/regulator";
 import { PredictabilityPanel } from "@/components/PredictabilityPanel";
 import { RiskPanel } from "@/components/RiskPanel";
@@ -8,6 +10,12 @@ import { currentMonth, formatPct, formatRange, isScored } from "@/lib/format";
 import type { ScheduleRequest, ScheduleResponse, SimulateResponse } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+// Inspector/admin view: not linked from the site navigation, and kept out of search engines.
+export const metadata: Metadata = {
+  title: "Regulator demo · Pop Quiz",
+  robots: { index: false, follow: false },
+};
 
 async function generateSchedule(body: ScheduleRequest): Promise<ScheduleResponse> {
   "use server";
