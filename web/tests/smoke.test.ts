@@ -7,9 +7,9 @@ import { fileURLToPath } from "node:url";
 
 import {
   explainFacility,
+  getBacklog,
   getFacilities,
   getFacility,
-  getTrophy,
   postSchedule,
 } from "../lib/api.ts";
 import {
@@ -25,7 +25,7 @@ import {
 } from "../lib/format.ts";
 import { clampCapacity, overdueCount, visibleProbabilities } from "../lib/regulator.ts";
 import { citationSignal, riskScore, timeSignal } from "../lib/risk.ts";
-import { bucketOf, nextMonthOverdue, summarizeBacklog, WEEKS_PER_MONTH } from "../lib/backlog.ts";
+import { bucketOf, homesInBucket, nextMonthOverdue, summarizeBacklog, WEEKS_PER_MONTH } from "../lib/backlog.ts";
 
 const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -91,11 +91,6 @@ describe("fixture fallback", () => {
     assert.match(explained.text, /survey-responsive staffing/);
     assert.doesNotMatch(explained.text, /gaming/i);
 
-    const trophy = await getTrophy();
-    assert.ok(trophy.length >= 1);
-    assert.equal(typeof trophy[0].ci_low, "number");
-    assert.equal(typeof trophy[0].score_pct, "number");
-
     const schedule = await postSchedule({ month: "2026-10", capacity: 3 });
     assert.equal(schedule.capacity, 3);
     assert.equal(schedule.selected.length, 3);
@@ -147,8 +142,8 @@ describe("regulator header", () => {
           );
           return;
         }
-        if (url === "/api/trophy") {
-          res.end("[]");
+        if (url === "/api/backlog") {
+          res.end(JSON.stringify({ as_of: "2026-07-31", forced_weeks: 69.1, homes: [] }));
           return;
         }
         res.statusCode = 404;
@@ -173,14 +168,14 @@ describe("regulator header", () => {
     await getFacility("115999");
     await explainFacility("115999");
     await postSchedule({ month: "2026-10", capacity: 3, seed: 1 });
-    await getTrophy();
+    await getBacklog();
 
     const byPath = (prefix: string) => seen.find((call) => call.url.startsWith(prefix));
     assert.equal(byPath("/api/facilities")?.role, undefined);
     assert.equal(byPath("/api/facility/")?.role, undefined);
     assert.equal(byPath("/api/explain")?.role, undefined);
     assert.equal(byPath("/api/schedule")?.role, "regulator");
-    assert.equal(byPath("/api/trophy")?.role, "regulator");
+    assert.equal(byPath("/api/backlog")?.role, "regulator");
 
     const schedule = byPath("/api/schedule");
     assert.equal(schedule?.method, "POST");
@@ -313,6 +308,20 @@ describe("inspection backlog", () => {
     const total = rows.reduce((sum, row) => sum + row.expectedPicks, 0);
     assert.ok(Math.abs(total - 2) < 1e-9);
     assert.equal(rows[3].avgChance, 1);
+  });
+
+  test("each group lists its homes, highest chance first, with whether they were drawn", () => {
+    const due = homesInBucket(homes, probs, ["000004"], "overdue");
+    assert.deepEqual(due.map((row) => [row.ccn, row.chance, row.picked]), [["000004", 1, true]]);
+    const all = (["recent", "mid", "due", "overdue"] as const).flatMap((id) => homesInBucket(homes, probs, [], id));
+    assert.equal(all.length, homes.length);
+    const two = homesInBucket(
+      [...homes, { ccn: "000005", weeks_since_last: 20, forced: false }],
+      [...probs, { ccn: "000005", prob: 0.4, forced: false }],
+      [],
+      "recent",
+    );
+    assert.deepEqual(two.map((row) => row.ccn), ["000005", "000001"]);
   });
 
   test("next month's overdue count is the crossing homes not picked this month", () => {

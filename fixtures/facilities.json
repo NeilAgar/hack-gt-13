@@ -10,8 +10,7 @@
     "score_pct": 10.8,
     "ci_low": 4.9,
     "ci_high": 16.2,
-    "label": "Low",
-    "trophy_flag": true
+    "label": "Low"
   },
   {
     "ccn": "115998",
@@ -24,8 +23,7 @@
     "score_pct": 2.1,
     "ci_low": -1.8,
     "ci_high": 6.0,
-    "label": "Watch",
-    "trophy_flag": false
+    "label": "Watch"
   },
   {
     "ccn": "115997",
@@ -38,8 +36,7 @@
     "score_pct": 0.4,
     "ci_low": -2.5,
     "ci_high": 3.3,
-    "label": "High",
-    "trophy_flag": false
+    "label": "High"
   },
   {
     "ccn": "115996",
@@ -52,8 +49,7 @@
     "score_pct": 7.3,
     "ci_low": 1.2,
     "ci_high": 13.4,
-    "label": "Low",
-    "trophy_flag": true
+    "label": "Low"
   },
   {
     "ccn": "115995",
@@ -66,8 +62,7 @@
     "score_pct": 5.6,
     "ci_low": -0.9,
     "ci_high": 12.1,
-    "label": "Watch",
-    "trophy_flag": false
+    "label": "Watch"
   },
   {
     "ccn": "115994",
@@ -80,7 +75,6 @@
     "score_pct": -0.8,
     "ci_low": -4.0,
     "ci_high": 2.4,
-    "label": "High",
-    "trophy_flag": false
+    "label": "High"
   }
 ]

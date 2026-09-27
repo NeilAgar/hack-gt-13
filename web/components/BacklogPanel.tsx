@@ -16,7 +16,7 @@ import {
   YAxis,
 } from "recharts";
 
-import { BUCKETS, monthsSince, nextMonthOverdue, scatterPoints, summarizeBacklog } from "@/lib/backlog";
+import { BUCKETS, homesInBucket, monthsSince, nextMonthOverdue, scatterPoints, summarizeBacklog } from "@/lib/backlog";
 import type { BacklogResponse, ScheduleResponse } from "@/lib/types";
 
 const AXIS_TICK = { fill: "#5e584e", fontSize: 12 };
@@ -46,6 +46,7 @@ export function BacklogPanel({
   const next = nextMonthOverdue(homes, schedule.probs, backlog.forced_weeks);
   const overdueNow = homes.filter((home) => home.forced).length;
   const points = scatterPoints(homes, schedule.probs);
+  const picked = schedule.selected.map((row) => row.ccn);
   const limit = Math.round(monthsSince(backlog.forced_weeks) * 10) / 10;
   const maxMonths = Math.max(limit + 2, ...points.map((point) => point.months));
 
@@ -190,6 +191,53 @@ export function BacklogPanel({
           </tbody>
         </table>
       </div>
+      <h4 className="backlog-lists-title">Homes in each group</h4>
+      {buckets.map((bucket) => {
+        const rows = homesInBucket(homes, schedule.probs, picked, bucket.id);
+        const onList = rows.filter((row) => row.picked).length;
+        return (
+          <details key={bucket.id} className="backlog-group">
+            <summary>
+              <span className="swatch" style={{ background: bucket.color }} aria-hidden />
+              <strong>{bucket.label}</strong>
+              <span className="meta">
+                {bucket.homes} homes · {onList} on this month&apos;s list
+              </span>
+            </summary>
+            {rows.length === 0 ? (
+              <p className="meta">No homes in this group.</p>
+            ) : (
+              <div className="table-scroll">
+                <table className="compact-table">
+                  <thead>
+                    <tr>
+                      <th>Home</th>
+                      <th>CCN</th>
+                      <th>Months since last inspection</th>
+                      <th>Chance this month</th>
+                      <th>On this month&apos;s list</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row) => (
+                      <tr key={row.ccn}>
+                        <td className="wrap-name">
+                          <a href={`/facility/${row.ccn}`}>{names[row.ccn] ?? row.ccn}</a>
+                        </td>
+                        <td>{row.ccn}</td>
+                        <td>{row.months.toFixed(1)}</td>
+                        <td>{pct(row.chance)}</td>
+                        <td>{row.picked ? "Yes" : "No"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </details>
+        );
+      })}
+
       <p className="note">
         Expected inspections add up each home&apos;s chance, so they sum to the plan&apos;s capacity. Past inspection
         dates only; this view is never shown to families.

@@ -11,7 +11,6 @@ every facility is named "Sample …". The API serves these until `data/processed
 | `POST /schedule` (regulator) | `schedule_sample.json` |
 | `GET /simulate` (regulator) | `simulate_sample.json` |
 | `GET /predictability` (regulator only) | `predictability.json` |
-| `GET /trophy` (regulator) | `trophy.json` |
 | `GET /backlog` (regulator) | `backlog_sample.json` |
 
 The six facilities are consistent across files. Their probabilities in `schedule_sample.json` sum to the capacity (3).

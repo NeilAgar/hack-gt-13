@@ -17,7 +17,6 @@ export type FacilitySummary = {
   ci_low: number | null;
   ci_high: number | null;
   label: ConsistencyLabel | null;
-  trophy_flag: boolean;
 };
 
 /** Curve point: rel_day and residual HPRD. */
@@ -45,7 +44,6 @@ export type FacilityDetail = {
   health_star: number;
   harm_citations_3y: number;
   ij_citations_3y: number;
-  rbs_proxy_eligible: boolean;
   n_surveys: number | null;
   raw_pct: number | null;
   score_pct: number | null;
@@ -54,7 +52,6 @@ export type FacilityDetail = {
   surge_pct: number | null;
   weekend_dip_pct: number | null;
   label: ConsistencyLabel | null;
-  trophy_flag: boolean;
   curve: CurvePoint[];
   state_curve: CurvePoint[];
   explanation: string | null;
@@ -104,7 +101,6 @@ export type ScheduleResponse = {
   probs: ScheduleProb[];
 };
 
-/** GET /trophy */
 /** GET /backlog (v1.3) — regulator only: weeks since each home's last standard inspection. */
 export type BacklogHome = {
   ccn: string;
@@ -116,12 +112,4 @@ export type BacklogResponse = {
   as_of: string;
   forced_weeks: number;
   homes: BacklogHome[];
-};
-
-export type TrophyRow = {
-  ccn: string;
-  name: string;
-  overall_star: number;
-  score_pct: number | null;
-  ci_low: number | null;
 };

@@ -58,7 +58,6 @@ def test_contract_tables_and_counts() -> None:
     assert (surveys["survey_type"] == "health_standard").all()
     assert (surveys["source"] == "current").all()
     assert set(scores["label"].unique()) <= {"High", "Watch", "Low"}
-    assert (scores.loc[scores["trophy_flag"], "ci_low"] > 0).all()
     assert (scores["ci_low"] <= scores["score_pct"]).all()
     assert (scores["score_pct"] <= scores["ci_high"]).all()
     assert (scores["ci_high"] - scores["ci_low"]).median() > 2

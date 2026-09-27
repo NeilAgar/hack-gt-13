@@ -8,7 +8,6 @@ import type {
   FacilitySummary,
   ScheduleRequest,
   ScheduleResponse,
-  TrophyRow,
 } from "./types";
 
 /**
@@ -178,14 +177,6 @@ export async function postSchedule(body: ScheduleRequest): Promise<ScheduleRespo
         true,
       ),
     () => readFixture<ScheduleResponse>("schedule_sample.json"),
-  );
-}
-
-/** Regulator only. Do not call this from family pages. */
-export async function getTrophy(): Promise<TrophyRow[]> {
-  return withFallback(
-    () => request<TrophyRow[]>("/trophy", undefined, true),
-    () => readFixture<TrophyRow[]>("trophy.json"),
   );
 }
 

@@ -73,3 +73,32 @@ export function scatterPoints(homes: BacklogHome[], probs: ScheduleProb[]) {
       chance: Math.round((probBy.get(home.ccn) ?? 0) * 1000) / 10,
     }));
 }
+
+export type BacklogRow = {
+  ccn: string;
+  months: number;
+  /** Chance of being picked this month (0–1). */
+  chance: number;
+  /** On this plan's drawn list. */
+  picked: boolean;
+};
+
+/** Homes in one group, highest chance first, then longest since the last inspection. */
+export function homesInBucket(
+  homes: BacklogHome[],
+  probs: ScheduleProb[],
+  picked: Iterable<string>,
+  bucket: BucketId,
+): BacklogRow[] {
+  const probBy = new Map(probs.map((row) => [row.ccn, row.prob]));
+  const pickedSet = new Set(picked);
+  return homes
+    .filter((home) => bucketOf(home) === bucket)
+    .map((home) => ({
+      ccn: home.ccn,
+      months: Math.round(monthsSince(home.weeks_since_last) * 10) / 10,
+      chance: probBy.get(home.ccn) ?? 0,
+      picked: pickedSet.has(home.ccn),
+    }))
+    .sort((a, b) => b.chance - a.chance || b.months - a.months || a.ccn.localeCompare(b.ccn));
+}

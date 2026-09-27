@@ -39,7 +39,7 @@ def test_facilities_contract_fields():
     rows = client.get("/api/facilities").json()
     assert rows
     expected = {"ccn", "name", "city", "lat", "lon", "overall_star", "adjusted_star", "staffing_star",
-                "score_pct", "ci_low", "ci_high", "label", "trophy_flag"}
+                "score_pct", "ci_low", "ci_high", "label"}
     assert all(set(r) == expected for r in rows)
 
 
@@ -65,7 +65,6 @@ def test_public_endpoints_never_expose_timing():
     ("post", "/api/schedule", {"month": "2026-10", "capacity": 3}),
     ("get", "/api/simulate?capacity=3", None),
     ("get", "/api/predictability", None),
-    ("get", "/api/trophy", None),
     ("get", "/api/backlog", None),
 ])
 def test_regulator_endpoints_need_header(method, path, body):
@@ -158,8 +157,9 @@ def test_regulator_falls_back_to_fixtures_without_models(monkeypatch):
     data.simulate.cache_clear()
 
 
-def test_trophy_still_labelled_fixtures():
-    assert client.get("/api/trophy", headers=REG).headers["X-Data-Source"] == "fixtures"
+def test_trophy_check_is_gone():
+    assert client.get("/api/trophy", headers=REG).status_code == 404
+    assert all("trophy_flag" not in r for r in client.get("/api/facilities").json())
 
 
 def test_schedule_capacity_above_eligible_pool_is_consistent():
@@ -236,16 +236,13 @@ def _write_processed(d):
     pd.DataFrame([
         {"ccn": "115001", "name": "Alpha Care", "city": "Macon", "county": "Bibb", "lat": 32.8, "lon": -83.6,
          "certified_beds": 100, "avg_residents": 80.5, "ownership": "For profit", "overall_star": 5,
-         "staffing_star": 4, "health_star": 5, "harm_citations_3y": 0, "ij_citations_3y": 0,
-         "rbs_proxy_eligible": True},
+         "staffing_star": 4, "health_star": 5, "harm_citations_3y": 0, "ij_citations_3y": 0},
         {"ccn": "115002", "name": "Beta Home", "city": "Savannah", "county": "Chatham", "lat": 32.1, "lon": -81.1,
          "certified_beds": 60, "avg_residents": 50.0, "ownership": "Non profit", "overall_star": 2,
-         "staffing_star": 2, "health_star": 2, "harm_citations_3y": 1, "ij_citations_3y": 0,
-         "rbs_proxy_eligible": False},
+         "staffing_star": 2, "health_star": 2, "harm_citations_3y": 1, "ij_citations_3y": 0},
     ]).astype({"overall_star": "Int64"}).to_parquet(d / "facilities.parquet")
     pd.DataFrame([{"ccn": "115001", "n_surveys": 2, "raw_pct": 9.0, "score_pct": 7.5, "ci_low": 2.0,
-                   "ci_high": 13.0, "surge_pct": 12.0, "weekend_dip_pct": -4.0, "label": "PLACEHOLDER",
-                   "trophy_flag": True}]).to_parquet(d / "scores.parquet")
+                   "ci_high": 13.0, "surge_pct": 12.0, "weekend_dip_pct": -4.0, "label": "PLACEHOLDER"}]).to_parquet(d / "scores.parquet")
     pd.DataFrame([{"ccn": "GA", "rel_day": 0, "hprd_resid_mean": 0.3, "n_obs": 500},
                   {"ccn": "GA", "rel_day": -1, "hprd_resid_mean": 0.34, "n_obs": 500},
                   {"ccn": "115001", "rel_day": -1, "hprd_resid_mean": 0.5, "n_obs": 2}]).to_parquet(d / "curves.parquet")
@@ -267,8 +264,8 @@ def test_family_serves_processed_tables(processed):
     rows = {f["ccn"]: f for f in r.json()}
     assert set(rows) == {"115001", "115002"}
     assert all(set(f) == {"ccn", "name", "city", "lat", "lon", "overall_star", "adjusted_star", "staffing_star",
-                          "score_pct", "ci_low", "ci_high", "label", "trophy_flag"} for f in rows.values())
-    assert rows["115001"]["score_pct"] == 7.5 and rows["115001"]["trophy_flag"] is True
+                          "score_pct", "ci_low", "ci_high", "label"} for f in rows.values())
+    assert rows["115001"]["score_pct"] == 7.5
     assert client.get("/api/facilities", params={"q": "savannah"}).json()[0]["ccn"] == "115002"
 
 
@@ -283,13 +280,8 @@ def test_facility_detail_from_processed(processed):
 def test_home_without_score_has_nulls_and_explains_why(processed):
     fac = client.get("/api/facility/115002").json()
     assert fac["score_pct"] is None and fac["ci_low"] is None and fac["curve"] == []
-    assert fac["trophy_flag"] is False and fac["label"] is None
+    assert fac["label"] is None
     assert client.post("/api/explain", json={"ccn": "115002"}).json()["text"] == explain_mod.NO_SCORE
-
-
-def test_trophy_from_processed(processed):
-    rows = client.get("/api/trophy", headers=REG).json()
-    assert rows == [{"ccn": "115001", "name": "Alpha Care", "overall_star": 5, "score_pct": 7.5, "ci_low": 2.0}]
 
 
 def test_real_processed_data_smoke(monkeypatch):

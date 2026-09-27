@@ -101,11 +101,6 @@ def backlog():
     return data.backlog()
 
 
-@regulator.get("/trophy", dependencies=[Depends(source_header)])
-def trophy():
-    return data.trophy()
-
-
 app.include_router(public)
 app.include_router(regulator)
 app.include_router(voice_router)

@@ -66,9 +66,6 @@ The evidence page (`/evidence` on the API) shows the statewide curve and the pla
 - **A map** of every home, colored by StaffTrace rating.
 
 ### For regulators: a schedule that is hard to predict
-- **Trophy Check.** Lists homes that would qualify for CMS's lighter Risk-Based Survey (we use a proxy:
-  5★ overall, staffing ≥ 3★, no harm or immediate-jeopardy citations in 3 years) even though their staffing
-  is survey-responsive.
 - **Risk score.** One number per home that decides its chance of being picked (formula below).
 - **Monthly inspection schedule.** Legally overdue homes are always included. The rest of the capacity is
   shared out by risk and then drawn at random, so no home can count on not being picked this month.
@@ -146,8 +143,9 @@ homes overdue that month.
 **Inspection backlog.** Under the schedule, the regulator page shows every home grouped by months since its last
 standard inspection (0–6, 6–12, 12–15.9, overdue). A scatter plot shows each home's chance of being picked
 in the current plan. The page also shows how many homes will cross the 15.9-month limit within a month, and
-how many of those the plan is expected to leave uninspected. The charts update each time you click
-Generate.
+how many of those the plan is expected to leave uninspected. Each group opens to list its homes, with months
+since the last inspection, the chance of being picked, and whether the home is on this month's list. The charts
+update each time you click Generate.
 
 ## Pages
 
@@ -155,7 +153,7 @@ Generate.
 |---|---|
 | `http://localhost:3000/` | Home: search, map, and the list of homes (the StaffTrace name in the header links here) |
 | `http://localhost:3000/facility/<ccn>` | One home: rating card, chart, explanation, tour questions |
-| `http://localhost:3000/regulator` | Regulator view: Trophy Check, risk score, schedule, inspection backlog. **Not linked anywhere on the site** and marked `noindex` |
+| `http://localhost:3000/regulator` | Regulator view: risk score, schedule, inspection backlog with each group's list of homes. **Not linked anywhere on the site** and marked `noindex` |
 | `http://localhost:3000/live` | Call Clock live view (needs the hardware or its simulator) |
 | `http://localhost:8000/evidence` | Statewide evidence: event-study curve vs placebo |
 | `http://localhost:8000/docs` | Interactive API docs (FastAPI) |
@@ -216,7 +214,6 @@ Base `http://localhost:8000/api`. The full contract is in [`docs/CONTRACTS.md`](
 | `POST /explain {ccn}` | public | Plain-language explanation (Grok rephrases the given numbers only) |
 | `GET /evidence` | public | Statewide event study and placebo |
 | `POST /schedule {month, capacity, seed?}` | regulator | Selected homes and each home's probability |
-| `GET /trophy` | regulator | Trophy Check list |
 | `GET /backlog` | regulator | Weeks since each home's last standard inspection, and whether it is overdue |
 | `GET /simulate`, `GET /predictability` | regulator | Kept in the contract; no longer shown on the site |
 | `POST /bedside`, `GET /bedside/*`, `GET /facility/{ccn}/bedside` | device / public | Call Clock events, live stream and log verification |
@@ -252,7 +249,7 @@ in [`hardware/README.md`](hardware/README.md).
 - **Families never see predicted inspection timing.** Schedule and prediction endpoints are regulator-only.
 - **Grok only rephrases numbers it is given.** It never produces a new figure, and there is a template
   fallback.
-- **Risk weights and the Risk-Based Survey eligibility test are proxies.** CMS publishes no eligibility list.
+- **Risk weights are judgement calls.** They are not fitted to inspection outcomes.
 
 ## Research credits
 
