@@ -162,7 +162,7 @@ SCORES_COLS = [
 CURVES_COLS = ["ccn", "rel_day", "hprd_resid_mean", "n_obs"]
 
 # Chen & Dillender (NBER w34037): day 0 is inspection END. Do not shift to start.
-# CONTRACTS windows, applied on that exit-day calendar.
+# Event-study windows (see README), applied on that exit-day calendar.
 PRE_RAMP = (-14, -1)
 SURGE = (0, 3)
 BASELINE = (28, 56)

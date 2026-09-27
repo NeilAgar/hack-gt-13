@@ -1,4 +1,4 @@
-"""Call Clock routes ("Measured at the bedside"). Contract addition v1.1 "Bedside", see docs/REQUESTS.md.
+"""Call Clock routes ("Measured at the bedside"). Contract addition v1.1 "Bedside".
 
 POST /api/bedside                    one event or a list; verified server-side, stored either way
 GET  /api/facility/{ccn}/bedside     stats for the facility panel (synthetic excluded unless asked)

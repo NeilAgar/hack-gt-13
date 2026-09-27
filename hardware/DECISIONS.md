@@ -66,7 +66,7 @@ status and the exact morning commands.
 - HC-SR501 behaviour (warm-up, retrigger jumper, false triggers from the mock LED's light? keep the PIR aimed at the door).
 - OLED at 0x3C, RGB polarity, LittleFS on first boot (formats automatically), `dump` over a real USB-UART.
 - The CP210x/CH340 auto-detect on your laptop; the S3 pin block; LD2410 frames; Wi-Fi/NTP path (off by default).
-- `docs/`, `web/` mounting and the Makefile target are requests to the owners (see `docs/REQUESTS.md`), not done.
+- `web/` mounting and the Makefile target are requests to the owners, not done.
 
 **Morning commands (repo root):**
 ```bash

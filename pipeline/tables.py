@@ -1,4 +1,4 @@
-"""Map live CMS headers onto CONTRACTS.md parquet tables."""
+"""Map live CMS headers onto the parquet column lists in pipeline/cms.py."""
 
 from __future__ import annotations
 

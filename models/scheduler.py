@@ -33,7 +33,7 @@ def default_capacity_from_surveys(n_facilities: int, surveys: pd.DataFrame | Non
     return max(1, int(round(len(surveys) / float(months))))
 
 
-# Risk weights (docs/DECISIONS.md, "Scheduler risk weights"). Each signal is put on a 0-1 scale first,
+# Risk weights (README.md, "Risk score and schedule"). Each signal is put on a 0-1 scale first,
 # so a weight says how much that signal counts:
 #   risk = residents x (BASE + W_SCORE*S + W_CITATIONS*C + W_TIME*T)
 # S = the home's percentile among Georgia homes on its survey-responsive score;
@@ -44,7 +44,7 @@ RISK_W_SCORE = 1.0
 RISK_W_CITATIONS = 1.0
 # T = time since the last standard inspection: 0 until 12 months (CMS's statewide-average target), then rising
 # in a straight line to 1 at the 15.9-month legal limit. Past the limit the home is forced in anyway.
-RISK_W_TIME = 2.0  # raised from 1 at the team's request (docs/DECISIONS.md)
+RISK_W_TIME = 2.0  # raised from 1 at the team's request, to favor homes near the 15.9-month limit
 TIME_START_MONTHS = 12.0
 HARM_POINTS = 0.1
 IJ_POINTS = 0.2

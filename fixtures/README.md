@@ -1,6 +1,6 @@
 # Fixtures
 
-SYNTHETIC data for building against docs/CONTRACTS.md v1 before real data lands. Not real CMS data:
+SYNTHETIC data for building against the API in README.md before real data lands. Not real CMS data:
 every facility is named "Sample …". The API serves these until `data/processed/` exists.
 
 | Endpoint | File |

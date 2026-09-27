@@ -1,4 +1,4 @@
-"""Smoke test: processed Georgia tables match CONTRACTS.md."""
+"""Smoke test: processed Georgia tables match the column lists in pipeline/cms.py."""
 
 import pandas as pd
 
