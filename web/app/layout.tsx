@@ -24,9 +24,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 <a href="/">StaffTrace</a>
               </p>
             </div>
-            <nav className="nav" aria-label="Primary">
-              <a href="/">Nursing Homes</a>
-            </nav>
           </div>
         </header>
         <main id="content">{children}</main>
