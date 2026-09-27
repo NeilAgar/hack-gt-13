@@ -140,9 +140,9 @@ Each month's schedule:
 The default capacity is **22 inspections a month**, Georgia's recent real pace. The minimum is the number of
 homes overdue that month.
 
-**Inspection backlog.** Under the schedule, the regulator page shows every home grouped by months since its last
-standard inspection (0–6, 6–12, 12–15.9, overdue). A scatter plot shows each home's chance of being picked
-in the current plan. The page also shows how many homes will cross the 15.9-month limit within a month, and
+**Inspection Backlog.** In its own section below the schedule, the regulator page shows every home grouped by months since its last
+standard inspection (0–6, 6–12, 12–15.9, overdue), with each group's average chance of being picked in the
+current plan. The page also shows how many homes will cross the 15.9-month limit within a month, and
 how many of those the plan is expected to leave uninspected. Each group opens to list its homes, with months
 since the last inspection, the chance of being picked, and whether the home is on this month's list. The charts
 update each time you click Generate.

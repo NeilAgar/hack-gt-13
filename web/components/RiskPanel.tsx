@@ -31,7 +31,7 @@ export function RiskPanel() {
       <p className="eyebrow" style={{ color: "var(--muted)" }}>
         How the schedule decides
       </p>
-      <h2 id="risk-heading">Risk score</h2>
+      <h2 id="risk-heading">Risk Score</h2>
       <p className="meta">
         Each home gets one risk number. Higher risk means a higher chance of being picked this month.
       </p>

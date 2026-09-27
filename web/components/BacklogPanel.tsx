@@ -6,17 +6,13 @@ import {
   CartesianGrid,
   Cell,
   LabelList,
-  Legend,
-  ReferenceLine,
   ResponsiveContainer,
-  Scatter,
-  ScatterChart,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 
-import { BUCKETS, homesInBucket, monthsSince, nextMonthOverdue, scatterPoints, summarizeBacklog } from "@/lib/backlog";
+import { homesInBucket, nextMonthOverdue, summarizeBacklog } from "@/lib/backlog";
 import type { BacklogResponse, ScheduleResponse } from "@/lib/types";
 
 const AXIS_TICK = { fill: "#5e584e", fontSize: 12 };
@@ -45,14 +41,11 @@ export function BacklogPanel({
   const buckets = summarizeBacklog(homes, schedule.probs);
   const next = nextMonthOverdue(homes, schedule.probs, backlog.forced_weeks);
   const overdueNow = homes.filter((home) => home.forced).length;
-  const points = scatterPoints(homes, schedule.probs);
   const picked = schedule.selected.map((row) => row.ccn);
-  const limit = Math.round(monthsSince(backlog.forced_weeks) * 10) / 10;
-  const maxMonths = Math.max(limit + 2, ...points.map((point) => point.months));
 
   return (
-    <div className="backlog" aria-labelledby="backlog-heading">
-      <h3 id="backlog-heading">Inspection backlog</h3>
+    <section className="panel backlog" aria-labelledby="backlog-heading" style={{ marginTop: "1rem" }}>
+      <h2 id="backlog-heading">Inspection Backlog</h2>
       <p className="meta">
         Months since each home&apos;s last standard inspection, as of {backlog.as_of}, and its chance of being
         picked in the {schedule.month} plan ({schedule.capacity} inspections). Federal rules allow at most 15.9
@@ -104,67 +97,6 @@ export function BacklogPanel({
             </ResponsiveContainer>
           </div>
         </figure>
-
-        <figure className="backlog-figure">
-          <figcaption>Chance of being picked this month, each dot one home</figcaption>
-          <div className="chart-wrap" style={{ height: 260 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart margin={{ top: 14, right: 12, left: 0, bottom: 18 }}>
-                <CartesianGrid stroke={GRID} />
-                <XAxis
-                  type="number"
-                  dataKey="months"
-                  domain={[0, Math.ceil(maxMonths)]}
-                  tick={AXIS_TICK}
-                  label={{ value: "Months since last inspection", position: "insideBottom", offset: -8, fill: "#5e584e", fontSize: 12 }}
-                />
-                <YAxis
-                  type="number"
-                  dataKey="chance"
-                  domain={[0, 100]}
-                  ticks={[0, 25, 50, 75, 100]}
-                  tickFormatter={(value: number) => `${value}%`}
-                  tick={AXIS_TICK}
-                  width={44}
-                />
-                <ReferenceLine
-                  x={limit}
-                  stroke="#1b242c"
-                  strokeDasharray="4 4"
-                  label={{ value: "15.9-month limit", position: "insideTopLeft", fill: "#1b242c", fontSize: 11 }}
-                />
-                <Tooltip
-                  cursor={{ strokeDasharray: "3 3" }}
-                  content={({ active, payload }) => {
-                    const point = active ? (payload?.[0]?.payload as (typeof points)[number] | undefined) : undefined;
-                    if (!point) return null;
-                    return (
-                      <div className="chart-tooltip">
-                        <strong>{names[point.ccn] ?? point.ccn}</strong>
-                        <br />
-                        {point.months} months since last inspection
-                        <br />
-                        {point.chance}% chance of being picked
-                      </div>
-                    );
-                  }}
-                />
-                <Legend verticalAlign="top" height={40} iconType="circle" iconSize={10} wrapperStyle={{ fontSize: 12, pointerEvents: "none" }} />
-                {BUCKETS.map((bucket) => (
-                  <Scatter
-                    key={bucket.id}
-                    name={bucket.label}
-                    data={points.filter((point) => point.bucket === bucket.id)}
-                    fill={bucket.color}
-                    stroke="#fffdf9"
-                    strokeWidth={1}
-                    isAnimationActive={false}
-                  />
-                ))}
-              </ScatterChart>
-            </ResponsiveContainer>
-          </div>
-        </figure>
       </div>
 
       <div className="table-scroll">
@@ -191,7 +123,7 @@ export function BacklogPanel({
           </tbody>
         </table>
       </div>
-      <h4 className="backlog-lists-title">Homes in each group</h4>
+      <h3 className="backlog-lists-title">Homes in each group</h3>
       {buckets.map((bucket) => {
         const rows = homesInBucket(homes, schedule.probs, picked, bucket.id);
         const onList = rows.filter((row) => row.picked).length;
@@ -242,6 +174,6 @@ export function BacklogPanel({
         Expected inspections add up each home&apos;s chance, so they sum to the plan&apos;s capacity. Past inspection
         dates only; this view is never shown to families.
       </p>
-    </div>
+    </section>
   );
 }
