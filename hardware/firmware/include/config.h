@@ -85,6 +85,14 @@
 #define CALIBRATE 0
 #endif
 #define CALIBRATE_PRINT_MS 2000
+// TEMPORARY FALLBACK, OFF BY DEFAULT. 1 = take the call-light state from the mock station's LED pin
+// instead of the light sensor. This BREAKS the witness's independence (it reads the system it is meant
+// to measure), so only use it while the light sensor is broken, and say so if you demo with it.
+// Build it with `pio run -e nano-bypass -t upload`; the firmware warns at boot and in `status`.
+// The light sensor is still sampled, so `cal on` keeps working for fixing it.
+#ifndef LIGHT_FROM_BUTTON
+#define LIGHT_FROM_BUTTON 0
+#endif
 
 // ───────────────────────────── Entry sensing ────────────────────────
 // Which doorway sensor is fitted. Only its edges count; the device never records images or audio.
