@@ -274,6 +274,15 @@ th { font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; colo
 /* Keep column titles visible while scrolling a long table. */
 .table-scroll thead th { position: sticky; top: 0; z-index: 1; background: var(--card); }
 .wrap-name { max-width: 28rem; }
+.equation {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.7rem 0.9rem;
+  overflow-x: auto;
+  color: var(--ink);
+}
 
 .error { color: #8d2b24; }
 
@@ -393,13 +402,8 @@ main { flex: 1; }
 .map-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 2rem; margin: 0.6rem 0 0.9rem; }
 .legend-title { margin: 0 0 0.25rem; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
 .map-legend .legend { margin: 0; }
-.ring-swatch {
-  width: 0.9rem;
-  height: 0.9rem;
-  border-radius: 50%;
-  display: inline-block;
-  box-sizing: border-box;
-  border: 3.5px solid;
-  background: #b9b3a8; /* neutral center, so the ring is what reads */
-  box-shadow: 0 0 0 1px #1b1b1b;
-}
+
+.label-rules { margin-top: 0.5rem; }
+.label-rules summary { cursor: pointer; color: var(--teal); font-weight: 600; font-size: 0.92rem; }
+.label-rules ul { list-style: none; padding: 0; margin: 0.4rem 0 0; display: grid; gap: 0.35rem; }
+.label-rules li[aria-current="true"] { color: var(--ink); }

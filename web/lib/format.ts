@@ -20,8 +20,8 @@ export const RATING_COLOR: Record<1 | 2 | 3 | 4 | 5, string> = {
   1: "#d03b3b",
   2: "#f07a2a",
   3: "#f2c12e",
-  4: "#2e9e4f",
-  5: "#2a78d6",
+  4: "#56b870", // light green
+  5: "#17693a", // green
 };
 
 /** Map-dot fill for homes CMS hasn't rated. */
@@ -47,6 +47,16 @@ export const LABEL_NOTE: Record<ConsistencyLabel, string> = {
     "Survey-responsive staffing: across at least two inspections, nurse hours run higher around inspections than at a typical Georgia home, and the whole uncertainty range is above that average. PBJ staffing data is self-reported.",
 };
 
+/**
+ * How each label is decided, in plain words. Mirrors assign_label() in pipeline/scores.py: the
+ * home's uncertainty range for its staffing change is compared with the Georgia average change.
+ */
+export const LABEL_RULE: Record<ConsistencyLabel, string> = {
+  High: "The whole range is at or below a typical Georgia home's change.",
+  Watch: "The range reaches above a typical Georgia home's change, but the evidence isn't strong enough to call it Low.",
+  Low: "Across at least two inspections, the whole range is above a typical Georgia home's change.",
+};
+
 export function isConsistencyLabel(value: string | null | undefined): value is ConsistencyLabel {
   return value === "High" || value === "Watch" || value === "Low";
 }
@@ -59,14 +69,6 @@ export function isScored(
   return Number.isFinite(scorePct) && Number.isFinite(ciLow) && Number.isFinite(ciHigh);
 }
 
-/** Map-dot ring: the consistency label, or neutral when the home has no score or label. */
-export function pinColor(
-  label: string | null | undefined,
-  scorePct: number | null | undefined,
-): string {
-  if (!Number.isFinite(scorePct) || !isConsistencyLabel(label)) return NEUTRAL_COLOR;
-  return LABEL_COLOR[label];
-}
 
 export function formatCount(value: number): string {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);

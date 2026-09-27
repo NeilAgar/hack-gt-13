@@ -99,8 +99,7 @@ export default async function FacilityPage({
           )}
         </section>
 
-        <section className="panel" aria-labelledby="explain-heading">
-          <h2 id="explain-heading">Plain-language explanation</h2>
+        <section className="panel" aria-label="What this means">
           <p>
             {explanation?.trim()
               ? explanation

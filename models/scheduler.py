@@ -32,27 +32,40 @@ def default_capacity_from_surveys(n_facilities: int, surveys: pd.DataFrame | Non
     return max(1, int(round(len(surveys) / float(months))))
 
 
+# Risk weights (docs/DECISIONS.md, "Scheduler risk weights"). Each signal is put on a 0-1 scale first,
+# so a weight says how much that signal counts:
+#   risk = residents x (BASE + W_SCORE*S + W_CITATIONS*C + W_WEEKEND*W)
+# S, W = the home's percentile among Georgia homes on its survey-responsive score and its weekend dip;
+# C = min(1, 0.1 x harm citations + 0.2 x immediate-jeopardy citations), last 3 years.
+RISK_BASE = 0.25
+RISK_W_SCORE = 1.0
+RISK_W_CITATIONS = 1.0
+RISK_W_WEEKEND = 0.25
+HARM_POINTS = 0.1
+IJ_POINTS = 0.2
+DEFAULT_RESIDENTS = 80.0
+MISSING_PERCENTILE = 0.5  # a home with no score or weekend data sits in the middle, not at the top or bottom
+
+
+def _percentile(values: pd.Series) -> pd.Series:
+    return pd.to_numeric(values, errors="coerce").rank(pct=True).fillna(MISSING_PERCENTILE)
+
+
 def risk_weights(facilities: pd.DataFrame, scores: pd.DataFrame) -> pd.Series:
     fac = facilities.copy()
     fac["ccn"] = fac["ccn"].astype(str).str.zfill(6)
     sc = scores.copy()
     sc["ccn"] = sc["ccn"].astype(str).str.zfill(6)
     df = fac.merge(sc, on="ccn", how="left", suffixes=("", "_s"))
-    residents = pd.to_numeric(df.get("avg_residents"), errors="coerce").fillna(80.0)
-    score = pd.to_numeric(df.get("score_pct"), errors="coerce").fillna(0.0).clip(lower=0)
-    harm = pd.to_numeric(df.get("harm_citations_3y"), errors="coerce").fillna(0.0)
-    ij = pd.to_numeric(df.get("ij_citations_3y"), errors="coerce").fillna(0.0)
-    weekend = pd.to_numeric(df.get("weekend_dip_pct"), errors="coerce")
-    if not isinstance(weekend, pd.Series):
-        weekend = pd.Series(0.0, index=df.index)
-    weekend = weekend.fillna(0.0)
-    weekend_hit = weekend.abs()
-    if "agency_share" in df.columns:
-        agency = pd.to_numeric(df["agency_share"], errors="coerce").fillna(0.0).clip(lower=0)
-    else:
-        agency = pd.Series(0.0, index=df.index)
+    empty = pd.Series(np.nan, index=df.index)
+    residents = pd.to_numeric(df.get("avg_residents", empty), errors="coerce").fillna(DEFAULT_RESIDENTS)
+    score = _percentile(df.get("score_pct", empty))
+    weekend = _percentile(df.get("weekend_dip_pct", empty))
+    harm = pd.to_numeric(df.get("harm_citations_3y", empty), errors="coerce").fillna(0.0)
+    ij = pd.to_numeric(df.get("ij_citations_3y", empty), errors="coerce").fillna(0.0)
+    citations = (HARM_POINTS * harm + IJ_POINTS * ij).clip(upper=1.0)
     risk = residents * (
-        0.25 + score / 10.0 + 0.2 * harm + 0.4 * ij + weekend_hit / 20.0 + 2.0 * agency
+        RISK_BASE + RISK_W_SCORE * score + RISK_W_CITATIONS * citations + RISK_W_WEEKEND * weekend
     )
     return pd.Series(risk.to_numpy(), index=df["ccn"].to_numpy(), dtype=float)
 

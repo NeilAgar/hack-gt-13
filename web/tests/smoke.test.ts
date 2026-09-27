@@ -18,7 +18,6 @@ import {
   isScored,
   LABEL_COLOR,
   NEUTRAL_COLOR,
-  pinColor,
   RATING_COLOR,
   ratingColor,
   UNRATED_COLOR,
@@ -28,6 +27,7 @@ import {
   UNSCORED_COPY,
 } from "../lib/format.ts";
 import { clampCapacity, overdueCount, topPredictability, visibleProbabilities } from "../lib/regulator.ts";
+import { citationSignal, riskScore } from "../lib/risk.ts";
 
 const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -263,14 +263,12 @@ describe("scores and simulation copy", () => {
     assert.equal(isScored(null, null, null), false);
     assert.equal(scoreHeadline(null, 0, 0, null), null);
     assert.equal(scoreSummary(null, null, null), UNSCORED_COPY);
-    assert.equal(pinColor(null, 4.2), NEUTRAL_COLOR);
-    assert.equal(pinColor("Watch", null), NEUTRAL_COLOR);
-    assert.equal(pinColor("Low", 4.2), LABEL_COLOR.Low);
     assert.equal(ratingColor(1), "#d03b3b");
-    assert.equal(ratingColor(5), "#2a78d6");
+    assert.equal(ratingColor(4), "#56b870");
+    assert.equal(ratingColor(5), "#17693a");
     assert.equal(ratingColor(null), UNRATED_COLOR);
     assert.equal(ratingColor(0), UNRATED_COLOR);
-    // A ring color is never a rating color.
+    // A consistency chip color is never a rating color.
     for (const ring of Object.values(LABEL_COLOR)) assert.ok(!Object.values(RATING_COLOR).includes(ring));
   });
 
@@ -324,5 +322,15 @@ describe("family copy", () => {
     assert.match(text, /Illustrative model/);
     assert.match(text, /undetected shirk resident-months/);
     assert.match(text, /never shown to families/);
+  });
+});
+
+describe("risk score", () => {
+  test("matches risk_weights() in models/scheduler.py", () => {
+    // 100 × (0.25 + 1 + min(1, 0.1 + 0.4) + 0.25 × 0.5) = 187.5, as in models/test_smoke.py
+    assert.ok(Math.abs(riskScore({ residents: 100, scorePercentile: 1, weekendPercentile: 0.5, harm: 1, ij: 2 }) - 187.5) < 1e-9);
+    // Missing residents default to 80, missing ranks to 0.5, citations cap at 1.
+    assert.ok(Math.abs(riskScore({ ij: 20 }) - 80 * (0.25 + 0.5 + 1 + 0.125)) < 1e-9);
+    assert.equal(citationSignal(0, 20), 1);
   });
 });

@@ -6,7 +6,6 @@ import {
   isConsistencyLabel,
   isScored,
   LABEL_COLOR,
-  LABEL_NOTE,
   LABEL_PENDING,
   NEUTRAL_COLOR,
   popQuizRating,
@@ -15,11 +14,8 @@ import {
   scoreSummary,
   starString,
 } from "@/lib/format";
-import type { ConsistencyLabel } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
-
-const LABELS: ConsistencyLabel[] = ["High", "Watch", "Low"];
 
 export default async function HomePage({
   searchParams,
@@ -66,23 +62,6 @@ export default async function HomePage({
             <li>
               <span className="swatch" style={{ background: UNRATED_COLOR }} aria-hidden />
               <span>Not rated by CMS</span>
-            </li>
-          </ul>
-        </div>
-        <div>
-          <p className="legend-title">Ring: staffing consistency</p>
-          <ul className="legend">
-            {LABELS.map((label) => (
-              <li key={label}>
-                <span className="ring-swatch" style={{ borderColor: LABEL_COLOR[label] }} aria-hidden />
-                <strong>{label}</strong>
-                <span>{LABEL_NOTE[label]}</span>
-              </li>
-            ))}
-            <li>
-              <span className="ring-swatch" style={{ borderColor: NEUTRAL_COLOR }} aria-hidden />
-              <strong>{LABEL_PENDING}</strong>
-              <span>Not enough inspections to score yet.</span>
             </li>
           </ul>
         </div>

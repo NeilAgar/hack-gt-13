@@ -57,7 +57,7 @@ export function StaffingChart({
   return (
     <div className="chart-wrap" style={{ height }} aria-label={`Staffing curve for ${facilityName}`}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 18, right: 16, left: 0, bottom: 4 }}>
+        <LineChart data={data} margin={{ top: 18, right: 16, left: 12, bottom: 18 }}>
           <CartesianGrid stroke="#e3d7c6" />
           <XAxis
             dataKey="d"
@@ -66,17 +66,25 @@ export function StaffingChart({
             ticks={ticks}
             allowDataOverflow
             tick={{ fill: "#5e584e", fontSize: 12 }}
-            height={32}
+            height={44}
+            label={{ value: "Days from inspection end (day 0)", position: "insideBottom", offset: -4, fill: "#5e584e", fontSize: 12 }}
           />
           <YAxis
             tick={{ fill: "#5e584e", fontSize: 12 }}
-            width={40}
+            width={56}
+            label={{
+              value: "Hours per resident vs usual",
+              angle: -90,
+              position: "insideLeft",
+              offset: 8,
+              style: { textAnchor: "middle", fill: "#5e584e", fontSize: 12 },
+            }}
             domain={[
               (dataMin: number) => Math.min(dataMin, 0),
               // Headroom above the highest point (or the normal-day line) so peaks aren't clipped.
               (dataMax: number) => Math.max(dataMax, line ?? dataMax) * 1.15,
             ]}
-            tickFormatter={(v: number) => v.toFixed(1)}
+            tickFormatter={(v: number) => (Math.abs(v) < 0.05 ? 0 : v).toFixed(1)}
           />
           <Tooltip
             formatter={(value, name) => {
@@ -87,13 +95,20 @@ export function StaffingChart({
             }}
             labelFormatter={(label) => `Day ${label}`}
           />
-          <Legend verticalAlign="bottom" />
-          <ReferenceLine
-            x={0}
-            stroke="#123f4c"
-            strokeWidth={2}
-            label={{ value: "Day 0", position: "insideTop", fill: "#123f4c", fontSize: 12 }}
+          <Legend
+            verticalAlign="top"
+            height={28}
+            payload={[
+              { value: "This home", type: "line", id: "facility", color: "#a33b32" },
+              ...(line !== null
+                ? [{ value: "This home's normal (95% of ordinary days)", type: "plainline" as const, id: "normal", color: "#6b5b95", payload: { strokeDasharray: "2 4" } }]
+                : []),
+              ...(showState
+                ? [{ value: "Georgia average", type: "plainline" as const, id: "state", color: "#5e584e", payload: { strokeDasharray: "5 4" } }]
+                : []),
+            ]}
           />
+          <ReferenceLine x={0} stroke="#123f4c" strokeWidth={2} />
           {line !== null && (
             <ReferenceLine
               y={line}
@@ -101,7 +116,6 @@ export function StaffingChart({
               strokeWidth={1.6}
               strokeDasharray="2 4"
               ifOverflow="extendDomain"
-              label={{ value: "This home's normal (95%)", position: "insideTopRight", fill: "#6b5b95", fontSize: 12 }}
             />
           )}
           <Line
