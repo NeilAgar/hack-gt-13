@@ -9,6 +9,9 @@ export const metadata: Metadata = {
     "Staffing consistency for Georgia nursing homes, based on public CMS Payroll-Based Journal data.",
 };
 
+// The Grok voice line is served by the API (api/voice.py), next to /api.
+const VOICE_URL = `${(process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000/api").replace(/\/api\/?$/, "")}/voice`;
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
@@ -24,6 +27,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 <a href="/">StaffTrace</a>
               </p>
             </div>
+            <nav className="nav" aria-label="Primary">
+              <a href={VOICE_URL}>Ask Grok</a>
+            </nav>
           </div>
         </header>
         <main id="content">{children}</main>
