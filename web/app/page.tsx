@@ -104,7 +104,7 @@ export default async function HomePage({
                             style={{ background: label ? LABEL_COLOR[label] : NEUTRAL_COLOR }}
                             aria-hidden
                           />
-                          {label ? `Staffing consistency: ${label}` : LABEL_PENDING}
+                          {label ? `Staffing Consistency: ${label}` : LABEL_PENDING}
                         </span>
                       </p>
                       <p className="score">

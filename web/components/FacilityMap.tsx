@@ -73,9 +73,9 @@ export default function FacilityMap({ facilities }: { facilities: FacilitySummar
                 <br />
                 {facility.city}
                 <br />
-                {ratingText} · CMS Care Compare {facility.overall_star}★
+                {ratingText} · CMS rating {facility.overall_star}★
                 <br />
-                {label ? `Staffing consistency: ${label}` : LABEL_PENDING}
+                {label ? `Staffing Consistency: ${label}` : LABEL_PENDING}
                 <br />
                 {scoreSummary(facility.score_pct, facility.ci_low, facility.ci_high)}
                 <br />
