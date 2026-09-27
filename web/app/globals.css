@@ -397,7 +397,7 @@ main { flex: 1; }
 .tile-stars { color: #c9852a; letter-spacing: 0.04em; }
 .tile-link { display: inline-block; margin-top: 0.35rem; font-weight: 600; }
 
-/* Map legend: rating fills and consistency rings, drawn like the map dots */
+/* Map legend: rating fills, drawn like the map dots */
 .map-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 2rem; margin: 0.6rem 0 0.9rem; }
 .legend-title { margin: 0 0 0.25rem; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
 .map-legend .legend { margin: 0; }

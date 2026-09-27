@@ -30,8 +30,8 @@ export default async function HomePage({
       <h1>Staffing consistency around state inspections</h1>
       <p className="lede">
         Search a Georgia nursing home or a city. On the map, each dot&apos;s color is the home&apos;s StaffTrace
-        rating and its ring is its staffing consistency: whether nurse hours per resident are higher in
-        the 14 days through the day before past inspections ended than about a month later, a sign of
+        rating. Open a home to see its staffing consistency: whether nurse hours per resident are higher
+        in the 14 days through the day before past inspections ended than about a month later, a sign of
         survey-responsive staffing. Every score includes its uncertainty range. PBJ staffing data is
         self-reported.
       </p>
