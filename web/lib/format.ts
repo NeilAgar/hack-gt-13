@@ -1,18 +1,17 @@
 import type { ConsistencyLabel, CurvePoint } from "./types";
 
 /**
- * Staffing consistency colors, used for the map-dot ring and the label chips. They get darker as
- * concern rises, and none of them is a rating color (red, orange, yellow, green, blue), so a ring is
- * never mistaken for a rating. Deep purple was checked with the dataviz palette validator against
- * every rating fill.
+ * Staffing consistency chip colors (home list and facility page): teal for High, light gray for
+ * Watch, purple for Low. None is a rating color, so a chip is never mistaken for a star rating.
+ * All three pairs pass the dataviz palette validator for colorblind and normal-vision separation.
  */
 export const LABEL_COLOR: Record<ConsistencyLabel, string> = {
-  High: "#ffffff",
-  Watch: "#9a958b",
-  Low: "#5b2a86",
+  High: "#0f7f7b",
+  Watch: "#c9c3b8",
+  Low: "#8a5cc2",
 };
 
-/** Rings and chips with no score or no High/Watch/Low label. */
+/** Chips with no score or no High/Watch/Low label. */
 export const NEUTRAL_COLOR = "#e3dccf";
 
 /** Map-dot fill: the StaffTrace rating, 1 to 5 stars. */

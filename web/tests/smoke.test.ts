@@ -228,7 +228,7 @@ describe("scores copy", () => {
     assert.equal(ratingColor(null), UNRATED_COLOR);
     assert.equal(ratingColor(0), UNRATED_COLOR);
     // A consistency chip color is never a rating color.
-    for (const ring of Object.values(LABEL_COLOR)) assert.ok(!Object.values(RATING_COLOR).includes(ring));
+    for (const chip of Object.values(LABEL_COLOR)) assert.ok(!Object.values(RATING_COLOR).includes(chip));
   });
 
   test("the headline names the window through the day before the inspection ended", () => {
