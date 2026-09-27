@@ -97,7 +97,6 @@ def build_synthetic(n_homes: int = SYNTHETIC_N_HOMES, seed: int = SYNTHETIC_SEED
                     "health_star": 3,
                     "harm_citations_3y": 2 if score >= 7 else 0,
                     "ij_citations_3y": 0,
-                    "rbs_proxy_eligible": bool(rec.get("trophy_flag", False)),
                 }
             )
             scores_rows.append(
@@ -112,7 +111,6 @@ def build_synthetic(n_homes: int = SYNTHETIC_N_HOMES, seed: int = SYNTHETIC_SEED
                     "weekend_dip_pct": -4.0 if score >= 5 else -1.0,
                     "agency_share": 0.22 if score >= 7 else 0.08,
                     "label": rec.get("label", "Watch"),
-                    "trophy_flag": bool(rec.get("trophy_flag", False)),
                 }
             )
 
@@ -144,7 +142,6 @@ def build_synthetic(n_homes: int = SYNTHETIC_N_HOMES, seed: int = SYNTHETIC_SEED
                 "health_star": int(rng.integers(1, 6)),
                 "harm_citations_3y": harm,
                 "ij_citations_3y": int(rng.random() < 0.05),
-                "rbs_proxy_eligible": bool(score > 0 and rng.random() < 0.15),
             }
         )
         scores_rows.append(
@@ -159,7 +156,6 @@ def build_synthetic(n_homes: int = SYNTHETIC_N_HOMES, seed: int = SYNTHETIC_SEED
                 "weekend_dip_pct": float(rng.uniform(-12, 2)),
                 "agency_share": float(np.clip(rng.beta(2, 10), 0, 0.6)),
                 "label": None,  # set below, once the Georgia average of all synthetic homes is known
-                "trophy_flag": False,
             }
         )
 

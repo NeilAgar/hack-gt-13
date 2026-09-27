@@ -87,12 +87,6 @@ def build_facilities(provider_path: Path, citations_path: Path) -> pd.DataFrame:
     )
     out["harm_citations_3y"] = out["ccn"].map(harm).fillna(0).astype("int64")
     out["ij_citations_3y"] = out["ccn"].map(ij).fillna(0).astype("int64")
-    out["rbs_proxy_eligible"] = (
-        (out["overall_star"] == 5)
-        & (out["staffing_star"] >= 3)
-        & (out["harm_citations_3y"] == 0)
-        & (out["ij_citations_3y"] == 0)
-    ).fillna(False).astype(bool)
     out = out.drop_duplicates(subset=["ccn"], keep="first")
     return out[FACILITIES_COLS]
 

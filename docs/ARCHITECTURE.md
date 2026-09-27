@@ -20,7 +20,7 @@ There are two modes on one backend:
 4. Family mode never shows when the next inspection is likely.
 
 ### Regulator mode (demo login)
-1. **Statewide table:** each facility's score, uncertainty, risk signals and **Trophy Check** flag. The flag means the home qualifies for CMS's lighter Risk-Based Survey even though its staffing rises only around inspections.
+1. **Inspection backlog:** every home grouped by months since its last standard inspection, with its chance of being picked this month.
 2. **Scheduler:** set inspector capacity per month, then press **Generate**. The app returns this month's randomized inspection list plus each facility's probability of being chosen.
 3. **Simulation:** gaming exposure under the current near-annual rhythm vs. the StaffTrace schedule, at the same inspector budget.
 4. **Predictability panel:** internal only. Shows how guessable each home's next inspection is today.
@@ -38,7 +38,7 @@ There are two modes on one backend:
                                    4 Hazard model (internal)                    │         Family / Regulator
                                    5 Stackelberg LP → marginals → sampled plan  │         Map + charts
                                    6 Simulation (status quo vs StaffTrace)        │
-                                   7 Trophy Check join                          ├─▶ Grok: explanation
+                                                                                ├─▶ Grok: explanation
                                         │                                       └─▶ Grok Voice line
                                         └──▶ precomputed tables (facility, curve, schedule)
 ```
@@ -48,9 +48,8 @@ There are two modes on one backend:
 - **Inspection Dates:** CCN, survey date, survey type, cycle. Keep **Health Inspection Standard** only. ⚠ The current file (`NH_SurveyDates_Jul2026.csv`) holds only the **last 3 cycles (~2023–26)**. For 2017–22, stitch the monthly snapshots from the Provider Data archive (each has 3 cycles) and dedupe on CCN + date. Minimum viable: 3 surveys per home, with more shrinkage.
 - ⚠ **"Survey Date"** is documented only as "Date of the Inspection", with no start/exit distinction. Check it empirically: align the PBJ spikes to the date. If they peak on days −4 to 0, the date is the exit date, so shift the windows.
 - **Capacity for the scheduler:** no public roster of inspectors. Use Georgia's historical count of standard surveys per month as the capacity proxy.
-- **Risk-Based Survey eligibility:** no public eligibility list found. Use the star-rating and citation proxy and label it as such.
 - **Provider Info:** name, address, star ratings, ownership. Geocode if coordinates are missing.
-- **Health Deficiencies:** harm-level citations, used for risk weights and the Trophy Check.
+- **Health Deficiencies:** harm-level citations, used for risk weights.
 - All of it is small for Georgia (~356 homes; a few million rows). DuckDB on a laptop is enough.
 
 ### 2. Survey-Responsiveness Score
@@ -88,10 +87,6 @@ There are two modes on one backend:
 - **Metric:** resident-weighted "undetected shirk-months" over 3 years, compared at the same total inspection count.
 - Label it "illustrative model." Cite NBER's ~92 lives a year as the external benchmark and don't claim lives saved ourselves.
 
-### 6. Trophy Check
-- Build a proxy for CMS Risk-Based Survey eligibility: 5-star overall rating, staffing ≥ 3 stars, and no harm or immediate-jeopardy citations.
-- Flag proxy-eligible homes whose score lower bound is above zero.
-
 ### 7. Serving and LLM
 - **FastAPI** serves the precomputed tables:
   - `GET /facilities?q=`
@@ -122,5 +117,5 @@ See docs/TEAM-PLAN.md for the full timeline.
 1. **Hook:** one Georgia home's staffing curve peaks right before inspections.
 2. **Evidence:** the NBER predictability chart.
 3. **Family mode:** search Savannah, open a facility page, play the voice question.
-4. **Regulator mode:** Trophy Check list, set capacity, press Generate, run the simulation before vs. after.
+4. **Regulator mode:** set capacity, press Generate, then show the inspection backlog and each home's chance of being picked.
 5. **Close:** "Economists proved it. We built the score, the schedule, and the warning label."

@@ -207,7 +207,7 @@ async function main() {
     `<strong>Shows:</strong> the random-date placebo moves only ${fmt(P.on_site_pct)}%, so the spike is tied to real inspections, not to the method.`,
     `<strong>Doesn't show:</strong> much staffing up in advance. In days −14 to −5 staffing is ${fmt(R.pre_arrival_pct)}% vs normal. The effect is during inspections, not ahead of them.`,
     `<strong>Also:</strong> the typical home has ${ev.scores.median_weekend_dip_pct}% fewer nurse hours per resident on weekends than on weekdays.`,
-    `<strong>Per home:</strong> ${ev.scores.scored} homes scored (${["Low", "Watch", "High"].filter((k) => L[k]).map((k) => `${L[k]} ${k}`).join(", ")} consistency); ${ev.scores.trophy} flagged by Trophy Check.`,
+    `<strong>Per home:</strong> ${ev.scores.scored} homes scored (${["Low", "Watch", "High"].filter((k) => L[k]).map((k) => `${L[k]} ${k}`).join(", ")} consistency).`,
   ].map((t) => `<li>${t}</li>`).join("");
   document.getElementById("sample").textContent =
     `${S.facilities} homes, ${S.facility_days.toLocaleString()} facility-days, ${S.pbj_from} to ${S.pbj_to}; ${S.inspections} inspections fall inside that window.`;

@@ -204,8 +204,6 @@ def build_scores(daily: pd.DataFrame, surveys: pd.DataFrame, facilities: pd.Data
     ci_low = score - k * (raw - ci_low)
     ci_high = score + k * (ci_high - raw)
 
-    rbs = facilities.set_index("ccn")["rbs_proxy_eligible"]
-    names = facilities.set_index("ccn")["name"]
     out = pd.DataFrame(
         {
             "ccn": raw.index.astype("string").str.zfill(6),
@@ -224,21 +222,9 @@ def build_scores(daily: pd.DataFrame, surveys: pd.DataFrame, facilities: pd.Data
         assign_label(s, lo, hi, int(n), state_avg)
         for s, lo, hi, n in zip(out["score_pct"], out["ci_low"], out["ci_high"], out["n_surveys"])
     ]
-    out["trophy_flag"] = (
-        rbs.reindex(out["ccn"]).fillna(False).to_numpy() & (out["ci_low"] > 0)
-    )
     width = (out["ci_high"] - out["ci_low"]).median()
     print(f"median CI width: {width:.3f} percentage points")
     print(out["label"].value_counts().to_string())
-    trophies = out.loc[out["trophy_flag"]].copy()
-    trophies["name"] = trophies["ccn"].map(names)
-    print(f"trophy_flag true: {len(trophies)}")
-    if len(trophies):
-        print(
-            trophies.sort_values("score_pct", ascending=False)[
-                ["ccn", "name", "n_surveys", "score_pct", "ci_low", "ci_high", "label"]
-            ].to_string(index=False)
-        )
     example = out.iloc[0]
     print("headline example:")
     print(

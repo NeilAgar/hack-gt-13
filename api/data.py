@@ -14,9 +14,9 @@ FIXTURES = ROOT / "fixtures"
 PROCESSED = ROOT / "data" / "processed"
 
 LIST_FIELDS = ["ccn", "name", "city", "lat", "lon", "overall_star", "adjusted_star", "staffing_star",
-               "score_pct", "ci_low", "ci_high", "label", "trophy_flag"]
+               "score_pct", "ci_low", "ci_high", "label"]
 SCORE_FIELDS = ["n_surveys", "raw_pct", "score_pct", "ci_low", "ci_high", "surge_pct",
-                "weekend_dip_pct", "label", "trophy_flag"]
+                "weekend_dip_pct", "label"]
 LABELS = {"High", "Watch", "Low"}
 
 log = logging.getLogger(__name__)
@@ -68,7 +68,6 @@ def _processed():
         # Labels outside the contract (e.g. A's PLACEHOLDER before cutoffs are set) are served as null.
         if row.get("label") not in LABELS:
             row["label"] = None
-        row["trophy_flag"] = bool(row.get("trophy_flag"))
         if row.get("n_surveys") is not None:
             row["n_surveys"] = int(row["n_surveys"])
         details[row["ccn"]] = row
@@ -209,12 +208,3 @@ def backlog():
              for r in m["lags"].itertuples(index=False)]
     return {"as_of": AS_OF_DATE, "forced_weeks": round(float(FORCED_WEEKS), 2),
             "homes": sorted(homes, key=lambda h: h["ccn"])}
-
-
-def trophy():
-    p = _processed()
-    if p is None:
-        return _load("trophy.json")
-    rows = [{k: d[k] for k in ("ccn", "name", "overall_star", "score_pct", "ci_low")}
-            for d in p["details"].values() if d["trophy_flag"]]
-    return sorted(rows, key=lambda r: -(r["score_pct"] or 0))

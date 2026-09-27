@@ -135,7 +135,6 @@ FACILITIES_COLS = [
     "health_star",
     "harm_citations_3y",
     "ij_citations_3y",
-    "rbs_proxy_eligible",
 ]
 DAILY_STAFFING_COLS = [
     "ccn",
@@ -159,7 +158,6 @@ SCORES_COLS = [
     "surge_pct",
     "weekend_dip_pct",
     "label",
-    "trophy_flag",
 ]
 CURVES_COLS = ["ccn", "rel_day", "hprd_resid_mean", "n_obs"]
 

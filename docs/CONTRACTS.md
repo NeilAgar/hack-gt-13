@@ -1,4 +1,4 @@
-# CONTRACTS.md: v1.3 (FROZEN)
+# CONTRACTS.md: v1.4 (FROZEN)
 Change only through a PR labeled `contract` that all 4 owners approve. Bump the version when you change it.
 
 ## Keys and conventions
@@ -9,7 +9,7 @@ Change only through a PR labeled `contract` that all 4 owners approve. Bump the 
 ## Parquet tables in data/processed/ (A writes, unless noted)
 ### facilities
 ccn, name, city, county, lat, lon, certified_beds:int, avg_residents:float, ownership, overall_star:int,
-staffing_star:int, health_star:int, harm_citations_3y:int, ij_citations_3y:int, rbs_proxy_eligible:bool
+staffing_star:int, health_star:int, harm_citations_3y:int, ij_citations_3y:int
 
 ### daily_staffing
 ccn, date, census:int, hrs_rn, hrs_lpn, hrs_cna, hrs_contract, hprd, hprd_resid
@@ -20,7 +20,7 @@ ccn, survey_date, survey_type ('health_standard' only), source ('current'|'archi
 
 ### scores
 ccn, n_surveys:int, raw_pct, score_pct (shrunk), ci_low, ci_high, surge_pct, weekend_dip_pct,
-label ('High'|'Watch'|'Low' consistency; cutoffs set by A in docs/DECISIONS.md), trophy_flag:bool (= rbs_proxy_eligible AND ci_low > 0)
+label ('High'|'Watch'|'Low' consistency; cutoffs set by A in docs/DECISIONS.md)
 
 ### curves
 ccn (or 'GA' for the state average), rel_day:int (-42..56), hprd_resid_mean, n_obs:int
@@ -30,7 +30,7 @@ ccn, weeks_since_last:int, p_survey_week, p_next_60d
 
 ## API (C serves, D consumes). Base /api
 GET  /facilities?q=&limit=50
- → [{ccn,name,city,lat,lon,overall_star,adjusted_star,staffing_star,score_pct,ci_low,ci_high,label,trophy_flag}]
+ → [{ccn,name,city,lat,lon,overall_star,adjusted_star,staffing_star,score_pct,ci_low,ci_high,label}]
 GET  /facility/{ccn}
  → {…facility fields, score fields, adjusted_star:int|null, adjust_reason:string|null,
     normal_p95:float|null, normal_days:int|null,
@@ -49,7 +49,9 @@ POST /schedule {month:"YYYY-MM", capacity:int, seed?:int}
 GET  /simulate?capacity=int
  → {months:36, status_quo:{undetected_shirk_resident_months}, popquiz:{undetected_shirk_resident_months}, reduction_pct}
 GET  /predictability → [{ccn,name,p_next_60d}]   (regulator only)
-GET  /trophy → [{ccn,name,overall_star,score_pct,ci_low}]
 GET  /backlog → {as_of:"YYYY-MM-DD", forced_weeks:float, homes:[{ccn,weeks_since_last:int,forced:bool}]}
  (v1.3, regulator only) weeks since each home's last standard inspection, as of the scheduler's as-of date.
  forced = weeks_since_last >= forced_weeks (15.9 months), the same test /schedule uses. Past dates only; no prediction.
+
+(v1.4) Trophy Check removed: no /trophy endpoint, no trophy_flag (scores, /facilities, /facility), no
+rbs_proxy_eligible (facilities).

@@ -79,7 +79,6 @@ def evidence():
         "scores": {
             "scored": int(len(scores)),
             "labels": {k: int(v) for k, v in scores["label"].value_counts().items()},
-            "trophy": int(scores["trophy_flag"].sum()),
             "median_weekend_dip_pct": round(float(scores["weekend_dip_pct"].median()), 1),
         },
     }

@@ -29,7 +29,7 @@ The remaining hours to the 08:00 Sunday deadline are for polish, Devpost, video 
 - A: scores and curves on real GA data; shrinkage + bootstrap CIs; **placebo test** using random fake survey dates, which should show no spike. This is our credibility slide.
 - B: real surveys → hazard (should reproduce "74% of surveys fall 40–60 weeks after the last"); risk weights from scores and citations; simulation.
 - C: swap fixtures for parquet; add regulator endpoints; add the voice line.
-- D: wire to the real API; regulator mode (Trophy Check, capacity slider → Generate, sim chart).
+- D: wire to the real API; regulator mode (capacity slider → Generate, sim chart).
 - **13:00 integration checkpoint:** end-to-end on real data on `main`. If it isn't there, cut scope (see below).
 
 **13:00–18:00: stretch and polish**
