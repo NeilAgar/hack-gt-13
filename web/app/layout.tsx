@@ -25,8 +25,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               </p>
             </div>
             <nav className="nav" aria-label="Primary">
-              <a href="/">Families</a>
-              <a href="/regulator">Regulator demo</a>
+              <a href="/">Nursing Homes</a>
               <a href="http://localhost:8000/voice">Talk to Grok</a>
             </nav>
           </div>
