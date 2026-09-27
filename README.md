@@ -116,7 +116,7 @@ moves. About 1 ordinary day in 20 crosses it by chance.
 ### 5. Risk score and schedule (`models/`)
 
 ```
-risk = residents × (0.25 + S + C + 0.25 × W)
+risk = residents × (0.25 + S + C + 0.25 × W + T)
 ```
 
 | Term | Meaning |
@@ -126,6 +126,7 @@ risk = residents × (0.25 + S + C + 0.25 × W)
 | **S** | The home's rank (0–1) among Georgia homes on its staffing score |
 | **C** | 0.1 per harm citation + 0.2 per immediate-jeopardy citation (3 years), capped at 1 |
 | **W** | The home's rank (0–1) on weekend staffing drop, a weaker signal |
+| **T** | Time since the last standard inspection: 0 until 12 months, rising to 1 at the 15.9-month legal limit |
 
 The weights are judgement calls, not fitted to inspection outcomes. The reasoning is in `docs/DECISIONS.md`.
 

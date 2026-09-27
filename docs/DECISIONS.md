@@ -69,3 +69,31 @@ in 20 crosses it by chance.
 Effect on current data (Spearman correlation of risk with each input, old → new): home size 0.81 → 0.71, our
 staffing score 0.00 → 0.41. Low-label homes in the top 50 by risk: 9 → 11 of 30. These weights are still
 judgement calls, not fitted to inspection outcomes, and the UI labels them that way.
+
+## Time since the last inspection in the risk score (C, 2026-09-27)
+
+`risk = residents × (0.25 + S + C + 0.25 × W + T)`. **T** is 0 until 12 months since a home's last standard
+inspection, then rises in a straight line to 1 at 15.9 months. Code: `time_signal()` and `RISK_W_TIME` in
+`models/scheduler.py`; the simulation's schedule arm picks it up through `build_schedule`.
+
+| Choice | Why |
+|---|---|
+| **Starts at 12 months** | CMS expects a state's standard surveys to average about 12 months apart, so past 12 months a home is "due". Before that, time adds nothing, so recently inspected homes keep their risk-based chance. |
+| **Full at 15.9 months** | The legal maximum. Past it the home is forced in anyway, so the ramp only matters where the scheduler still has a choice. |
+| **Linear, weight 1** | Same weight as the staffing score and citations. Tested at capacity 22 (Aug 2026, real data), comparing weights 0 / 0.5 / 1 / 2 / 4. |
+
+What the weights did (overdue homes after 1 / 3 / 6 / 12 months of 22 inspections a month; share of the
+non-forced chance going to homes at 12–15.9 months; 36-month simulation reduction):
+
+| Weight | Overdue path | Share to 12–15.9 mo | Chance for homes under 12 mo | Sim reduction |
+|---|---|---|---|---|
+| 0 | 26, 23, 34, 49 | 33% | 2.1% | 4.6% |
+| **1** | **26, 21, 30, 47** | **54%** | **1.4%** | **5.5%** |
+| 2 | 25, 20, 30, 44 | 77% | 0.7% | 5.0% |
+| 4 | 23, 18, 25, 38 | 96% | 0.1% | 3.3% |
+
+Weight 1 is the best simulation result, and it still leaves homes inspected under a year ago a real chance of a
+visit. Weight 4 cuts the backlog more but sends almost every random visit to homes at 12–15.9 months, which
+makes timing predictable again, the pattern StaffTrace exists to break. **Capacity is the binding
+constraint.** Even at 34 inspections a month, the overdue list grows (to 33 after 12 months, with weight 1),
+because many homes were last inspected in the same burst.

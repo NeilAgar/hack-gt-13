@@ -13,7 +13,8 @@ pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
 from models.config import DEFAULT_MONTH, FORCED_WEEKS, OFF_HOURS_MIN_SHARE, PROCESSED_DIR
 from models.hazard import bunching_share, gap_summary, hazard_table
 from models.load import load_inputs
-from models.scheduler import build_schedule, default_capacity, risk_weights
+from models.scheduler import build_schedule, default_capacity, risk_weights, time_signal
+from models.config import WEEKS_PER_MONTH
 from models.simulate import simulate
 from models.synthetic import interval_weeks
 
@@ -214,3 +215,22 @@ def test_risk_weights_formula():
     # Missing score and weekend data sit at the middle percentile.
     no_scores = risk_weights(fac, pd.DataFrame({"ccn": ["000001"], "score_pct": [None], "weekend_dip_pct": [None]}))
     assert no_scores["000001"] == pytest.approx(100 * (0.25 + 0.5 + 0.5 + 0.25 * 0.5))
+
+
+def test_time_signal_ramps_from_12_to_15_9_months():
+    weeks = pd.Series([0, 11.9, 12, 13.95, 15.9, 30]) * WEEKS_PER_MONTH
+    t = time_signal(weeks).round(6).tolist()
+    assert t[:3] == [0.0, 0.0, 0.0]
+    assert t[3] == pytest.approx(0.5)
+    assert t[4:] == [1.0, 1.0]
+
+
+def test_risk_rises_with_time_since_last_inspection():
+    fac = pd.DataFrame({"ccn": ["000001", "000002"], "avg_residents": [100.0, 100.0],
+                        "harm_citations_3y": [0, 0], "ij_citations_3y": [0, 0]})
+    scores = pd.DataFrame({"ccn": ["000001", "000002"], "score_pct": [1.0, 1.0], "weekend_dip_pct": [10.0, 10.0]})
+    lags = pd.DataFrame({"ccn": ["000001", "000002"], "weeks_since_last": [20, int(15.0 * WEEKS_PER_MONTH)]})
+    no_time = risk_weights(fac, scores)
+    with_time = risk_weights(fac, scores, lags)
+    assert with_time["000001"] == pytest.approx(no_time["000001"])  # under 12 months: no boost
+    assert with_time["000002"] > no_time["000002"]
